@@ -1,7 +1,18 @@
+export let selectionRange = [];
+
 let events = {
   mouseup: [],
   mousemove: [],
+  mousedown: [],
   keydown: [],
+  selectionchanged: [],
+  callfunction: [],
+  tablechanged: [],
+  tableloaded: [],
+  aftertableloaded: [],
+  openpopup: [],
+  closepopup: [],
+  cellchanged: [],
 };
 
 function on(event, callback) {
@@ -23,6 +34,9 @@ document.addEventListener("mousemove", function(e) {
 document.addEventListener("mouseup", function(e) {
   broadcast("mouseup", e);
 });
+document.addEventListener("mousedown", function(e) {
+  broadcast("mousedown", e);
+});
 document.addEventListener("keydown", function(e) {
   broadcast("keydown", e);
 });
@@ -31,4 +45,5 @@ export default {
   on,
   off,
   clear,
+  broadcast,
 };

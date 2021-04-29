@@ -1,5 +1,5 @@
 <template>
-  <div class="table">
+  <div class="table" ref="table">
     <div class="table__free-space" @click="selectAll"></div>
     <div class="table__row-headers-wrapper">
       <div
@@ -96,13 +96,11 @@
             class="table__cell"
           >
             <Cell
-              :cell="getCell(rowid, columnid)"
-              :selectionRange="selectionRange"
               :selection="selection"
-              :selectionMap="selectionMap"
               :rowid="rowid"
               :columnid="columnid"
               :table="table"
+              :focused="focused"
               @selectionStart="selectionStart"
               @selectionMove="selectionMove"
               @startEditing="clearSelection(1)"
@@ -118,6 +116,7 @@
 import Cell from "@/components/Cell";
 import DisableScroll from "@/disableScroll";
 import Events from "@/events";
+import { selectionRange } from "@/events";
 
 export default {
   components: {
@@ -136,11 +135,9 @@ export default {
       resizingColumnId: -1,
       resizingColumnLeft: -1,
       isSelecting: false,
-      lastSelectionMove: 0,
-      selectionRange: [],
       selection: {},
-      selectionMap: [],
       clipboard: {},
+      focused: true,
     };
   },
   methods: {
@@ -161,15 +158,6 @@ export default {
       return {
         width: width + "px",
       };
-    },
-    getCell(rowid, columnid) {
-      if (!this.table.cells[rowid] || !this.table.cells[rowid][columnid]) {
-        if (!this.table.cells[rowid]) this.table.cells[rowid] = [];
-        this.table.cells[rowid][columnid] = {
-          content: null,
-        };
-      }
-      return this.table.cells[rowid][columnid];
     },
     __letterByNum(num) {
       switch (num + 1) {
@@ -267,7 +255,14 @@ export default {
       this.resizingRowId = -1;
       this.resizingColumnId = -1;
 
+      // mouseup
       this.isSelecting = false;
+      var current = e.target;
+      while (current != this.$refs.table && current) {
+        current = current.parentElement;
+      }
+      if (!current) this.focused = false;
+      else this.focused = true;
     },
     contentScroll(e) {
       this.$refs.column_headers_scroll.scrollTo(e.target.scrollLeft, 0);
@@ -282,48 +277,44 @@ export default {
       }
       this.isSelecting = true;
       if (!e.ev.ctrlKey && !e.ev.shiftKey) this.clearSelection();
-      this.selectionMap = [];
-      this.selectionRange.push({ row: e.row, column: e.column });
-      e.index = this.selectionRange.length;
+      selectionRange.push({ row: e.row, column: e.column });
+      e.index = selectionRange.length;
       this.selection.start = e;
+      Events.broadcast("selectionchanged", null);
     },
     selectionMove(e) {
-      if (
-        (this.isSelecting || e.move) &&
-        +new Date() > this.lastSelectionMove + 200
-      ) {
-        this.lastSelectionMove = +new Date();
+      if (this.isSelecting || e.move) {
         this.selection.end = e;
         let minY = Math.min(this.selection.start.row, e.row);
         let maxY = Math.max(this.selection.start.row, e.row);
         let minX = Math.min(this.selection.start.column, e.column);
         let maxX = Math.max(this.selection.start.column, e.column);
-        this.selectionMap = [];
         this.clearSelection(this.selection.start.index);
         if (
           minY == maxY &&
           minX == 0 &&
           maxX == this.table.columns.length - 1
         ) {
-          this.selectionRange.push({ row: minY });
+          selectionRange.push({ row: minY });
         } else if (
           minX == maxX &&
           minY == 0 &&
           maxY == this.table.rows.length - 1
         ) {
-          this.selectionRange.push({ column: minX });
+          selectionRange.push({ column: minX });
         } else {
-          this.selectionRange.push({
+          selectionRange.push({
             startRow: minY,
             endRow: maxY,
             startColumn: minX,
             endColumn: maxX,
           });
         }
+        Events.broadcast("selectionchanged", null);
       }
     },
     clearSelection(index = 0) {
-      while (this.selectionRange.length > index) this.selectionRange.pop();
+      while (selectionRange.length > index) selectionRange.pop();
     },
     selectAll() {
       this.clearSelection();
@@ -332,13 +323,14 @@ export default {
         column: 0,
         ev: {},
       });
-      this.selectionRange.push(null);
+      selectionRange.push(null);
       this.isSelecting = false;
+      Events.broadcast("selectionchanged", null);
     },
     getSelectedCells() {
       let start = this.selection.start;
       let result = [];
-      for (let select of this.selectionRange) {
+      for (let select of selectionRange) {
         if (select == null) {
           for (let row = 0; row < this.table.rows.length; row++)
             for (let col = 0; col < this.table.columns.length; col++)
@@ -390,35 +382,50 @@ export default {
         this.table.columns.push(this.copyObject(this.table.default.column));
       if (!this.table.cells[start.row + row])
         this.table.cells[start.row + row] = [];
-      this.table.cells[start.row + row][start.column + column] = cell;
-      this.selectionRange.push({
+      this.setCell(start.row + row, start.column + column, cell);
+      selectionRange.push({
         row: start.row + row,
         column: start.column + column,
       });
     },
     paste() {
       let clipboardSave = this.copyObject(this.clipboard);
-      this.selectionMap = [];
       this.clearSelection(0);
       for (let data of this.clipboard.cells) {
         this.pasteCell(this.selection.start, data.row, data.column, data.cell);
       }
       this.clipboard = clipboardSave;
+      Events.broadcast("selectionchanged", null);
+      Events.broadcast("tablechanged", null);
+    },
+    clearSelected() {
+      for (let cell of this.getSelectedCells())
+        this.setCell(cell.row, cell.column, { content: null });
+      Events.broadcast("tablechanged", { content: null });
     },
     keyPress(e) {
+      if (!this.focused) return;
       if (e.ctrlKey && e.code == "KeyA") this.selectAll();
       else if (e.ctrlKey && e.code == "KeyC") {
         if (this.selection.start) this.copy();
       } else if (e.ctrlKey && e.code == "KeyV") {
         if (this.selection.start && this.clipboard.cells) this.paste();
       } else if (e.code == "Delete") {
+        this.clearSelected();
       }
+    },
+    setCell(row, column, value) {
+      this.table.cells[row][column] = value;
+      Events.broadcast("cellchanged", { row, column, value });
     },
   },
   created() {
     Events.on("mousemove", this.resizeMove);
     Events.on("mouseup", this.resizeEnd);
     Events.on("keydown", this.keyPress);
+    Events.on("callfunction", (name) => {
+      if (this[name]) this[name]();
+    });
   },
   mounted() {
     DisableScroll.disableScroll(this.$refs.column_headers_scroll);
@@ -428,7 +435,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-$border: 1px solid black;
+@import "../assets/vars.scss";
 
 .table {
   display: grid;
@@ -438,8 +445,8 @@ $border: 1px solid black;
   grid-template-columns: 20px calc(100% - 20px);
 
   &__free-space {
-    border-right: $border;
-    border-bottom: $border;
+    border-right: $table_border;
+    border-bottom: $table_border;
   }
 
   &__header {
@@ -451,14 +458,14 @@ $border: 1px solid black;
 
   &__row-headers-wrapper {
     grid-row: 2;
-    border-right: $border;
+    border-right: $table_border;
     background: lightgrey;
   }
   &__row-headers-scroll {
     height: 100%;
   }
   &__row-header {
-    border-bottom: $border;
+    border-bottom: $table_border;
     overflow: hidden;
   }
   &__row-header:last-child {
@@ -482,7 +489,7 @@ $border: 1px solid black;
 
   &__column-headers-wrapper {
     grid-column: 2;
-    border-bottom: $border;
+    border-bottom: $table_border;
     background: lightgrey;
   }
   &__column-headers {
@@ -490,7 +497,7 @@ $border: 1px solid black;
     width: fit-content;
   }
   &__column-header {
-    border-right: $border;
+    border-right: $table_border;
     overflow: hidden;
   }
   &__column-header:last-child {
@@ -528,7 +535,7 @@ $border: 1px solid black;
   }
 
   &__cell {
-    border-left: $border;
+    border-left: $table_border;
     height: 100%;
     overflow: hidden;
   }
@@ -536,18 +543,18 @@ $border: 1px solid black;
     border-left: none;
   }
   &__cell:last-child {
-    border-right: $border;
+    border-right: $table_border;
   }
 
   &__row {
     display: flex;
-    border-top: $border;
+    border-top: $table_border;
   }
   &__row:first-child {
     border-top: none;
   }
   &__row:last-child {
-    border-bottom: $border;
+    border-bottom: $table_border;
   }
 }
 </style>

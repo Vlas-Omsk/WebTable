@@ -10,17 +10,17 @@
     @mouseup="onMouseUp"
     :contenteditable="isEditing"
     :class="{ 'cell-editing': isEditing }"
-    :style="selectionStyle"
     autofocus
   >
     <div class="cell__editor">
-      <div>{{ cell.content ? cell.content : " " }}</div>
+      <div ref="editor_content">{{ content }}</div>
     </div>
   </div>
 </template>
 
 <script>
 import Events from "@/events";
+import { selectionRange } from "@/events";
 
 export default {
   props: {
@@ -28,22 +28,14 @@ export default {
       type: Object,
       required: true,
     },
-    cell: {
-      type: Object,
-      required: true,
-    },
-    selectionRange: {
-      type: Array,
-      required: true,
-    },
     selection: {
       type: Object,
       required: true,
     },
-    selectionMap: {
-      type: Array,
-      required: true,
-    },
+    // selectionMap: {
+    //   type: Array,
+    //   required: true,
+    // },
     rowid: {
       type: Number,
       required: true,
@@ -52,36 +44,25 @@ export default {
       type: Number,
       required: true,
     },
+    focused: {
+      type: Boolean,
+      required: true,
+    },
   },
   data() {
     return {
       isEditing: false,
+      content: null,
     };
-  },
-  computed: {
-    selectionStyle() {
-      if (!this.isSelected(this.rowid, this.columnid)) return;
-      let result = { "box-sizing": "border-box" };
-      let border = "2px solid green";
-      if (!this.isSelected(this.rowid - 1, this.columnid))
-        result.borderTop = border;
-      if (!this.isSelected(this.rowid, this.columnid + 1))
-        result.borderRight = border;
-      if (!this.isSelected(this.rowid + 1, this.columnid))
-        result.borderBottom = border;
-      if (!this.isSelected(this.rowid, this.columnid - 1))
-        result.borderLeft = border;
-      if (!this.isStartCell()) result.background = "lightgrey";
-      return result;
-    },
   },
   methods: {
     onMouseDown(e) {
-      this.$emit("selectionStart", {
-        row: this.rowid,
-        column: this.columnid,
-        ev: e,
-      });
+      if (!this.isEditing)
+        this.$emit("selectionStart", {
+          row: this.rowid,
+          column: this.columnid,
+          ev: e,
+        });
     },
     onMouseMove(e) {
       this.$emit("selectionMove", {
@@ -106,12 +87,13 @@ export default {
       }, 10);
     },
     onUnfocus(e) {
-      this.cell.content = e.target.innerText;
+      this.updateContent(this.content);
       this.isEditing = false;
     },
     onKeyPress(e) {
       if (e.code === "Enter" && !e.shiftKey) {
         e.preventDefault();
+        this.updateContent(this.content);
         this.isEditing = false;
         return;
       }
@@ -155,7 +137,22 @@ export default {
           ].indexOf(str) != -1)
       );
     },
+    getCell() {
+      if (
+        !this.table.cells[this.rowid] ||
+        !this.table.cells[this.rowid][this.columnid]
+      ) {
+        if (!this.table.cells[this.rowid]) this.table.cells[this.rowid] = [];
+        this.table.cells[this.rowid][this.columnid] = {
+          content: null,
+        };
+      }
+      return this.table.cells[this.rowid][this.columnid];
+    },
     globalKeyPress(e) {
+      if (!this.focused) {
+        return;
+      }
       if (
         !e.ctrlKey &&
         this.isLetter(e.key) &&
@@ -163,11 +160,13 @@ export default {
         this.isSelected(this.rowid, this.columnid) &&
         this.isStartCell()
       ) {
-        this.cell.content = this.cell.content
-          ? this.cell.content + e.key
-          : e.key;
+        this.content = this.content ? this.content + e.key : e.key;
         this.onFocus(true);
       }
+    },
+    updateContent() {
+      this.getCell().content = this.$refs.editor_content.innerText.trim();
+      Events.broadcast("tablechanged", null);
     },
     selectElementContents(el, movetoend) {
       var range = document.createRange();
@@ -183,45 +182,75 @@ export default {
         this.selection.start.column == this.columnid
       );
     },
-    setMap(row, column, value) {
-      if (!this.selectionMap[row]) this.selectionMap[row] = [];
-      return (this.selectionMap[row][column] = value);
-    },
     isSelected(row, column) {
-      if (
-        this.selectionMap[row] != undefined &&
-        this.selectionMap[row][column] != undefined
-      )
-        return this.selectionMap[row][column];
       if (
         row < 0 ||
         row >= this.table.rows.length ||
         column < 0 ||
         column >= this.table.columns.length
       )
-        return this.setMap(row, column, false);
+        return false;
 
-      for (let select of this.selectionRange) {
-        if (select == null) return this.setMap(row, column, true);
-        else if (select.column == undefined && select.row == row)
-          return this.setMap(row, column, true);
+      for (let select of selectionRange) {
+        if (select == null) return true;
+        else if (select.column == undefined && select.row == row) return true;
         else if (select.row == undefined && select.column == column)
-          return this.setMap(row, column, true);
-        else if (select.row == row && select.column == column)
-          return this.setMap(row, column, true);
+          return true;
+        else if (select.row == row && select.column == column) return true;
         else if (
           select.startColumn <= column &&
           select.endColumn >= column &&
           select.startRow <= row &&
           select.endRow >= row
         )
-          return this.setMap(row, column, true);
+          return true;
       }
-      return this.setMap(row, column, false);
+      return false;
+    },
+    onSelectionSelectionChanged() {
+      if (!this.$refs.editor) return;
+      if (!this.isSelected(this.rowid, this.columnid)) {
+        this.$refs.editor.style.border = null;
+        this.$refs.editor.style.boxSizing = null;
+        this.$refs.editor.style.background = null;
+        return;
+      }
+      this.$refs.editor.style.boxSizing = "border-box";
+      let border = "2px solid green";
+      if (!this.isSelected(this.rowid - 1, this.columnid))
+        this.$refs.editor.style.borderTop = border;
+      else this.$refs.editor.style.borderTop = null;
+      if (!this.isSelected(this.rowid, this.columnid + 1))
+        this.$refs.editor.style.borderRight = border;
+      else this.$refs.editor.style.borderRight = null;
+      if (!this.isSelected(this.rowid + 1, this.columnid))
+        this.$refs.editor.style.borderBottom = border;
+      else this.$refs.editor.style.borderBottom = null;
+      if (!this.isSelected(this.rowid, this.columnid - 1))
+        this.$refs.editor.style.borderLeft = border;
+      else this.$refs.editor.style.borderLeft = null;
+      if (!this.isStartCell()) this.$refs.editor.style.background = "lightgrey";
+      else this.$refs.editor.style.background = null;
     },
   },
   created() {
     Events.on("keydown", this.globalKeyPress);
+    Events.on("selectionchanged", this.onSelectionSelectionChanged);
+    Events.on("cellchanged", (e) => {
+      if (e.row == this.rowid && e.column == this.columnid)
+        this.content = e.value.content;
+    });
+    Events.on(
+      "aftertableloaded",
+      () => (this.content = this.getCell().content)
+    );
+  },
+  mounted() {
+    this.content = this.getCell().content;
+    this.onSelectionSelectionChanged();
+  },
+  destroyed() {
+    Events.off("selectionchanged", this.onSelectionSelectionChanged);
   },
 };
 </script>
