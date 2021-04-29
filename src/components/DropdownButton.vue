@@ -3,12 +3,13 @@
     class="dropdown-button"
     @click="click"
     ref="button"
-    :class="{ 'dropdown-button-opened': isOpened }"
+    :class="{ opened: z__isOpened }"
   >
     {{ title }}
     <ul class="dropdown-button__dropdown" ref="dropdown">
       <li
         class="dropdown-button__row"
+        :class="{ disabled: item.__isDisabled }"
         v-for="(item, i) of items"
         :key="i"
         @click="
@@ -38,8 +39,23 @@ export default {
   },
   data() {
     return {
-      isOpened: false,
+      z__isOpened: false,
     };
+  },
+  computed: {
+    isOpened: {
+      get() {
+        return this.z__isOpened;
+      },
+      set(value) {
+        this.z__isOpened = value;
+        if (this.z__isOpened) {
+          for (let item of this.items) {
+            if (item.isDisabled) item.__isDisabled = item.isDisabled();
+          }
+        }
+      },
+    },
   },
   methods: {
     click(e) {
@@ -73,12 +89,12 @@ export default {
   }
   position: relative;
   color: #202124;
-  cursor: pointer;
   border-radius: 4px;
   font-size: 14px;
   letter-spacing: 0.2px;
   padding: 4px 12px;
   transition: background-color 0.2s ease-in-out;
+  cursor: pointer;
 
   &__dropdown {
     position: absolute;
@@ -99,18 +115,24 @@ export default {
     opacity: 0;
     transform: translateY(100%);
     transition: opacity 0.1s ease-in-out;
+    cursor: default;
   }
   &__row {
     &:hover {
       background: #f1f3f4;
     }
+    &.disabled {
+      opacity: 0.8;
+      pointer-events: none;
+      cursor: default;
+    }
     margin: 0;
-    padding: 0;
     padding: 6px 15px 6px 38px;
     word-wrap: normal;
     text-align: left;
+    cursor: pointer;
   }
-  &-opened {
+  &.opened {
     background-color: #d1d3d4;
     &:hover {
       background-color: #d1d3d4;

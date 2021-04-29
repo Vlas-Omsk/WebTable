@@ -29,7 +29,7 @@
         </div>
       </div>
     </div>
-    <div class="table__scroll" @scroll="contentScroll">
+    <div class="table__scroll" ref="table_viewer" @scroll="contentScroll">
       <div class="table__content">
         <CellRow
           v-for="(_, rowid) of table.rows"
@@ -47,7 +47,7 @@ import RowHeader from "@/components/RowHeader";
 import ColumnHeader from "@/components/ColumnHeader";
 import CellRow from "@/components/CellRow";
 import Events from "@/events";
-import { table, selection, selectionMap } from "@/etable";
+import { table, selection, selectionRange, viewer } from "@/etable";
 import ETable from "@/etable";
 import { copyObject, disableScroll, isAnyParentContains } from "@/static";
 
@@ -70,52 +70,10 @@ export default {
       this.$refs.column_headers_scroll.scrollTo(e.target.scrollLeft, 0);
       this.$refs.row_headers_scroll.scrollTo(0, e.target.scrollTop);
     },
-    copyCell(start, row, column) {
-      if (!table.cells[row][column]) return;
-      // if (!this.clipboard.cells[row - start.row])
-      //   this.clipboard.cells[row - start.row] = [];
-      // this.clipboard.cells[row - start.row][
-      //   column - start.column
-      // ] = this.table.cells[row][column];
-      this.clipboard.cells.push({
-        row: row - start.row,
-        column: column - start.column,
-        cell: table.cells[row][column],
-      });
-    },
-    copy() {
-      this.clipboard.cells = [];
-      let start = selection.start;
-      for (let cell of ETable.getSelectedCells())
-        this.copyCell(start, cell.row, cell.column);
-      this.clipboard = copyObject(this.clipboard);
-    },
-    pasteCell(start, row, column, cell) {
-      while (table.rows.length <= start.row + row)
-        table.rows.push(copyObject(table.default.row));
-      while (table.columns.length <= start.column + column)
-        table.columns.push(copyObject(table.default.column));
-      if (!table.cells[start.row + row]) table.cells[start.row + row] = [];
-      ETable.setCell(start.row + row, start.column + column, cell);
-      ETable.setMap(start.row + row, start.column + column);
-    },
-    paste() {
-      let clipboardSave = copyObject(this.clipboard);
-      ETable.clearSelection();
-      for (let data of this.clipboard.cells) {
-        this.pasteCell(selection.start, data.row, data.column, data.cell);
-      }
-      this.clipboard = clipboardSave;
-      Events.broadcast("selectionchanged", null);
-    },
     keyPress(e) {
       if (!this.focused) return;
       if (e.ctrlKey && e.code == "KeyA") ETable.selectAll();
-      else if (e.ctrlKey && e.code == "KeyC") {
-        if (selection.start) this.copy();
-      } else if (e.ctrlKey && e.code == "KeyV") {
-        if (selection.start && this.clipboard.cells) this.paste();
-      } else if (e.code == "Delete") {
+      else if (e.code == "Delete") {
         ETable.clearSelected();
       }
     },
@@ -130,6 +88,8 @@ export default {
   mounted() {
     disableScroll(this.$refs.column_headers_scroll);
     disableScroll(this.$refs.row_headers_scroll);
+
+    ETable.setViewer(this.$refs.table_viewer);
   },
 };
 </script>

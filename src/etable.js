@@ -1,7 +1,7 @@
 import Events from "@/events";
 import { copyObject } from "@/static";
 
-export let selectionMap,
+export let selectionRange = [],
   selection = {},
   isSelecting = false,
   table = {
@@ -21,20 +21,34 @@ export let selectionMap,
 let resizingRowId = -1,
   resizingRowTop = -1,
   resizingColumnId = -1,
-  resizingColumnLeft = -1;
+  resizingColumnLeft = -1,
+  viewer = null;
 
 function init() {
-  clearSelection();
-
   Events.on("tablechanged", tableChanged);
   Events.on("mousemove", resizeMove);
+  Events.on("touchmove", resizeMove);
   Events.on("mouseup", resizeEnd);
+  Events.on("touchend", resizeEnd);
+  Events.on("touchmove", selectionTouchMove);
+  Events.on("copy", handleCopy);
+  Events.on("paste", handlePaste);
+  Events.on("cut", handleCut);
+
   for (let i = 0; i < 50; i++) {
     table.rows.push(copyObject(table.default.row));
   }
   for (let i = 0; i < 50; i++) {
     table.columns.push(copyObject(table.default.column));
   }
+}
+
+function setViewer(v) {
+  viewer = v;
+}
+
+function getViewer() {
+  return viewer;
 }
 
 function tableChanged(e) {
@@ -88,7 +102,8 @@ function columnResizeStart(columnid, e) {
 
 function resizeMove(e) {
   if (resizingRowId != -1) {
-    var height = e.clientY - resizingRowTop;
+    var height =
+      (e.clientY ? e.clientY : e.touches[0].clientY) - resizingRowTop;
     if (height > 5) table.rows[resizingRowId].height = height;
     Events.broadcast("rowsizechanged", {
       row: resizingRowId,
@@ -96,7 +111,8 @@ function resizeMove(e) {
     });
   }
   if (resizingColumnId != -1) {
-    var width = e.clientX - resizingColumnLeft;
+    var width =
+      (e.clientX ? e.clientX : e.touches[0].clientX) - resizingColumnLeft;
     if (width > 5) table.columns[resizingColumnId].width = width;
     Events.broadcast("columnsizechanged", {
       column: resizingColumnId,
@@ -112,13 +128,6 @@ function resizeEnd(e) {
 }
 
 //selection
-function setMap(row, column) {
-  if (row == null) selectionMap.columns[column] = true;
-  if (column == null) selectionMap.rows[row] = true;
-  if (!selectionMap.cells[row]) selectionMap.cells[row] = [];
-  return (selectionMap.cells[row][column] = true);
-}
-
 function selectionStart(e) {
   if (resizingRowId != -1 || resizingColumnId != -1) return;
   if (e.ev.shiftKey) {
@@ -128,8 +137,8 @@ function selectionStart(e) {
   }
   isSelecting = true;
   if (!e.ev.ctrlKey && !e.ev.shiftKey) clearSelection();
-  setMap(e.row, e.column);
-  e.savedState = copyObject(selectionMap);
+  selectionRange.push({ row: e.row, column: e.column });
+  e.index = selectionRange.length;
   selection.start = e;
   Events.broadcast("selectionchanged", null);
 }
@@ -141,22 +150,54 @@ function selectionMove(e) {
     let maxY = Math.max(selection.start.row, e.row);
     let minX = Math.min(selection.start.column, e.column);
     let maxX = Math.max(selection.start.column, e.column);
-    clearSelection(selection.start.savedState);
+    clearSelection(selection.start.index);
     if (minY == maxY && minX == 0 && maxX == table.columns.length - 1) {
-      setMap(minY, null);
+      selectionRange.push({ row: minY });
     } else if (minX == maxX && minY == 0 && maxY == table.rows.length - 1) {
-      setMap(null, minX);
+      selectionRange.push({ column: minX });
     } else {
-      for (let row = minY; row <= maxY; row++)
-        for (let col = minX; col <= maxX; col++) setMap(row, col);
+      selectionRange.push({
+        startRow: minY,
+        endRow: maxY,
+        startColumn: minX,
+        endColumn: maxX,
+      });
     }
     Events.broadcast("selectionchanged", null);
   }
 }
 
-function clearSelection(savedState = null) {
-  if (savedState) selectionMap = copyObject(savedState);
-  else selectionMap = { all: false, rows: [], columns: [], cells: [] };
+function selectionTouchMove(e) {
+  let component = document.elementFromPoint(
+    e.touches[0].clientX,
+    e.touches[0].clientY
+  );
+  if (!component || !isSelecting) return;
+  component = component.__vue__;
+  if (!component) return;
+
+  if (component.$options._componentTag == "Cell")
+    selectionMove({
+      row: component.rowid,
+      column: component.columnid,
+      ev: e,
+    });
+  else if (component.$options._componentTag == "RowHeader")
+    selectionMove({
+      row: component.rowid,
+      column: table.columns.length - 1,
+      ev: e,
+    });
+  else if (component.$options._componentTag == "ColumnHeader")
+    selectionMove({
+      row: table.rows.length - 1,
+      column: component.columnid,
+      ev: e,
+    });
+}
+
+function clearSelection(index = 0) {
+  while (selectionRange.length > index) selectionRange.pop();
 }
 
 function selectAll() {
@@ -166,46 +207,135 @@ function selectAll() {
     column: 0,
     ev: {},
   });
-  selectionMap.all = true;
+  selectionRange.push(null);
   isSelecting = false;
   Events.broadcast("selectionchanged", null);
 }
 
-function isSelected(row, column) {
-  if (
-    row < 0 ||
-    row >= table.rows.length ||
-    column < 0 ||
-    column >= table.columns.length
-  )
-    return false;
-
-  if (selectionMap.all == true) return true;
-  else {
-    if (selectionMap.rows[row] == true) return true;
-    else if (selectionMap.columns[column] == true) return true;
-    else if (selectionMap.cells[row] && selectionMap.cells[row][column] == true)
-      return true;
-  }
-
-  return false;
-}
-
 function getSelectedCells() {
+  let start = selection.start;
   let result = [];
-  for (let row = 0; row < table.rows.length; row++) {
-    for (let col = 0; col < table.columns.length; col++) {
-      if (isSelected(row, col)) result.push({ row, column: col });
+  for (let select of selectionRange) {
+    if (select == null) {
+      for (let row = 0; row < table.rows.length; row++)
+        for (let col = 0; col < table.columns.length; col++)
+          result.push({ row, column: col });
+      break;
+    } else if (select.column == undefined && select.row == start.row) {
+      for (let col = 0; col < table.columns.length; col++)
+        result.push({ row: start.row, column: col });
+    } else if (select.row == undefined && select.column == start.column) {
+      for (let row = 0; row < table.rows.length; row++)
+        result.push({ row, column: start.column });
+    } else if (select.row != undefined && select.column != undefined) {
+      result.push({ row: select.row, column: select.column });
+    } else {
+      for (let row = select.startRow; row <= select.endRow; row++)
+        for (let col = select.startColumn; col <= select.endColumn; col++)
+          result.push({ row, column: col });
     }
   }
-
   return result;
 }
 
-export default {
-  init,
+//clipboard
+const clipboard = { value: null, __value: null };
 
-  setMap,
+if (navigator.clipboard) {
+  Object.defineProperty(clipboard, "value", {
+    get() {
+      return navigator.clipboard.readText();
+    },
+    set(text) {
+      navigator.clipboard.writeText(text).then(null, function() {
+        console.log("clipboard write failed");
+      });
+    },
+  });
+} else {
+  Object.defineProperty(clipboard, "value", {
+    get() {
+      return new Promise((resolve, reject) => resolve(clipboard.__value));
+    },
+    set(text) {
+      clipboard.__value = text;
+    },
+  });
+}
+
+function copyCell(start, row, column, cpb) {
+  if (!table.cells[row][column]) return;
+  cpb.cells.push({
+    row: row - start.row,
+    column: column - start.column,
+    cell: table.cells[row][column],
+  });
+}
+
+function getCopyObj() {
+  let cpb = { cells: [] };
+  let start = selection.start;
+  for (let cell of getSelectedCells())
+    copyCell(start, cell.row, cell.column, cpb);
+  return cpb;
+}
+
+function copy() {
+  clipboard.value = JSON.stringify(getCopyObj());
+}
+
+function handleCopy(e) {
+  e.preventDefault();
+  e.clipboardData.setData("text/plain", JSON.stringify(getCopyObj()));
+}
+
+function pasteCell(start, row, column, cell) {
+  while (table.rows.length <= start.row + row)
+    table.rows.push(copyObject(table.default.row));
+  while (table.columns.length <= start.column + column)
+    table.columns.push(copyObject(table.default.column));
+  if (!table.cells[start.row + row]) table.cells[start.row + row] = [];
+  setCell(start.row + row, start.column + column, cell);
+  selectionRange.push({
+    row: start.row + row,
+    column: start.column + column,
+  });
+}
+
+function pasteFromObj(cpb) {
+  if (!selection.start || !cpb || !cpb.cells) return;
+  clearSelection(0);
+  for (let data of cpb.cells) {
+    pasteCell(selection.start, data.row, data.column, data.cell);
+  }
+  Events.broadcast("selectionchanged", null);
+}
+
+function paste() {
+  clipboard.value.then((value) => {
+    pasteFromObj(JSON.parse(value));
+  });
+}
+
+function handlePaste(e) {
+  e.preventDefault();
+  pasteFromObj(JSON.parse(e.clipboardData.getData("text/plain")));
+}
+
+function cut() {
+  copy();
+  clearSelected();
+}
+
+function handleCut(e) {
+  handleCopy(e);
+  clearSelected();
+}
+
+export default {
+  setViewer,
+  getViewer,
+  init,
 
   clearSelected,
   getCell,
@@ -220,6 +350,9 @@ export default {
   selectionMove,
   clearSelection,
   selectAll,
-  isSelected,
   getSelectedCells,
+
+  copy,
+  paste,
+  cut,
 };

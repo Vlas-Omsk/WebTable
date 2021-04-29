@@ -6,7 +6,11 @@
     class="table__header column-header"
   >
     {{ numToLetters(columnid) }}
-    <div class="column-header__resizer" @mousedown="resizeStart"></div>
+    <div
+      class="column-header__resizer"
+      ref="header_resizer"
+      @mousedown="resizeStart"
+    ></div>
   </div>
 </template>
 
@@ -61,6 +65,9 @@ export default {
       column: this.columnid,
       value: table.columns[this.columnid].width,
     });
+
+    this.$refs.columnheader.addEventListener("touchstart", this.mousedown);
+    this.$refs.header_resizer.addEventListener("touchstart", this.resizeStart);
   },
 };
 </script>

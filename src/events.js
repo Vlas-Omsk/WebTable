@@ -3,6 +3,14 @@ let events = {
   mousemove: [],
   mousedown: [],
   keydown: [],
+  touchstart: [],
+  touchmove: [],
+  touchend: [],
+  copy: [],
+  paste: [],
+  cut: [],
+
+  //
   selectionchanged: [],
   rowsizechanged: [],
   columnsizechanged: [],
@@ -27,7 +35,7 @@ function clear() {
 function broadcast(event, evObject) {
   //setTimeout(() => {
   events[event].forEach((callback) => callback && callback(evObject));
-  //}, 1);
+  //});
 }
 
 document.addEventListener("mousemove", function(e) {
@@ -41,6 +49,24 @@ document.addEventListener("mousedown", function(e) {
 });
 document.addEventListener("keydown", function(e) {
   broadcast("keydown", e);
+});
+document.addEventListener("touchstart", function(e) {
+  broadcast("touchstart", e);
+});
+document.addEventListener("touchmove", function(e) {
+  broadcast("touchmove", e);
+});
+document.addEventListener("touchend", function(e) {
+  broadcast("touchend", e);
+});
+document.addEventListener("copy", function(e) {
+  broadcast("copy", e);
+});
+document.addEventListener("paste", function(e) {
+  broadcast("paste", e);
+});
+document.addEventListener("cut", function(e) {
+  broadcast("cut", e);
 });
 
 export default {

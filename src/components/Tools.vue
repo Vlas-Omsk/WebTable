@@ -13,6 +13,7 @@ import DropdownButton from "@/components/DropdownButton";
 import CreateTable from "@/popups/CreateTable";
 import Events from "@/events";
 import ETable from "@/etable";
+import { selection } from "@/etable";
 import json from "@/formats/json";
 
 export default {
@@ -53,6 +54,28 @@ export default {
           click() {
             ETable.clearSelected();
           },
+          isDisabled: this.isDisabled,
+        },
+        {
+          label: "Copy",
+          click() {
+            ETable.copy();
+          },
+          isDisabled: this.isDisabled,
+        },
+        {
+          label: "Paste",
+          click() {
+            ETable.paste();
+          },
+          isDisabled: this.isDisabled,
+        },
+        {
+          label: "Cut",
+          click() {
+            ETable.cut();
+          },
+          isDisabled: this.isDisabled,
         },
       ],
       windowtab: [
@@ -64,6 +87,11 @@ export default {
         },
       ],
     };
+  },
+  methods: {
+    isDisabled() {
+      return !selection.start;
+    },
   },
 };
 </script>

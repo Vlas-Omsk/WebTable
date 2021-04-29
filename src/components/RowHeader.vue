@@ -6,7 +6,11 @@
     class="table__header row-header"
   >
     {{ rowid + 1 }}
-    <div class="row-header__resizer" @mousedown="resizeStart"></div>
+    <div
+      class="row-header__resizer"
+      ref="header_resizer"
+      @mousedown="resizeStart"
+    ></div>
   </div>
 </template>
 
@@ -59,6 +63,9 @@ export default {
       row: this.rowid,
       value: table.rows[this.rowid].height,
     });
+
+    this.$refs.rowheader.addEventListener("touchstart", this.mousedown);
+    this.$refs.header_resizer.addEventListener("touchstart", this.resizeStart);
   },
 };
 </script>

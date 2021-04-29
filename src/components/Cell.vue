@@ -16,7 +16,8 @@
 
 <script>
 import Events from "@/events";
-import { selectionMap, selection, table } from "@/etable";
+import { selectionRange, selection, table } from "@/etable";
+import { disableScroll, enableScroll } from "@/static";
 import ETable from "@/etable";
 import { isLetter, selectElementContents, isOnVisibleSpace } from "@/static";
 
@@ -39,6 +40,7 @@ export default {
     return {
       isEditing: false,
       content: null,
+      isTouchEnd: false,
     };
   },
   methods: {
@@ -57,9 +59,34 @@ export default {
         ev: e,
       });
     },
+    onTouchStart(e) {
+      this.isTouchEnd = false;
+      let scrollOffset = {
+        top: ETable.getViewer().scrollTop,
+        left: ETable.getViewer().scrollLeft,
+      };
+      setTimeout(() => {
+        let top = ETable.getViewer().scrollTop,
+          left = ETable.getViewer().scrollLeft;
+        if (this.isTouchEnd == true) return;
+        if (
+          scrollOffset.top + 10 >= top &&
+          scrollOffset.top - 10 <= top &&
+          scrollOffset.left + 10 >= left &&
+          scrollOffset.left - 10 <= left
+        ) {
+          disableScroll(ETable.getViewer());
+          this.onMouseDown(e);
+        }
+      }, 500);
+    },
+    onTouchEnd(e) {
+      this.isTouchEnd = true;
+      enableScroll(ETable.getViewer());
+    },
     onFocus(movetoend = false) {
       this.isEditing = true;
-      ETable.clearSelection();
+      ETable.clearSelection(0);
       setTimeout(() => {
         this.$refs.editor.focus();
         selectElementContents(this.$refs.editor, movetoend);
@@ -106,7 +133,31 @@ export default {
         selection.start.column == this.columnid
       );
     },
-    isSelected: ETable.isSelected,
+    isSelected(row, column) {
+      if (
+        row < 0 ||
+        row >= table.rows.length ||
+        column < 0 ||
+        column >= table.columns.length
+      )
+        return false;
+
+      for (let select of selectionRange) {
+        if (select == null) return true;
+        else if (select.column == undefined && select.row == row) return true;
+        else if (select.row == undefined && select.column == column)
+          return true;
+        else if (select.row == row && select.column == column) return true;
+        else if (
+          select.startColumn <= column &&
+          select.endColumn >= column &&
+          select.startRow <= row &&
+          select.endRow >= row
+        )
+          return true;
+      }
+      return false;
+    },
     onSelectionSelectionChanged() {
       if (!this.$refs.editor) return;
       //if (!isOnVisibleSpace(this.$refs.editor)) return;
@@ -162,6 +213,9 @@ export default {
 
     this.content = this.getCell().content;
     this.onSelectionSelectionChanged();
+
+    this.$refs.editor.addEventListener("touchstart", this.onTouchStart);
+    this.$refs.editor.addEventListener("touchend", this.onTouchEnd);
   },
 };
 </script>

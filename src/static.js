@@ -164,6 +164,13 @@ export function disableScroll(el) {
   el.addEventListener("keydown", preventDefaultForScrollKeys, false);
 }
 
+export function enableScroll(el) {
+  el.removeEventListener("DOMMouseScroll", preventDefault, false); // older FF
+  el.removeEventListener(wheelEvent, preventDefault, wheelOpt); // modern desktop
+  el.removeEventListener("touchmove", preventDefault, wheelOpt); // mobile
+  el.removeEventListener("keydown", preventDefaultForScrollKeys, false);
+}
+
 export function isAnyParentContains(source, parents) {
   while (parents.indexOf(source) == -1 && source) {
     source = source.parentElement;
@@ -175,7 +182,7 @@ export function isAnyParentContains(source, parents) {
 export function isOnVisibleSpace(element) {
   var bodyHeight = window.innerHeight;
   var bodyWidth = window.innerWidth;
-  var elemRect = element.getClientRects()[0];
+  var elemRect = element.getBoundingClientRect();
   if (
     elemRect.bottom < 0 ||
     elemRect.top > bodyHeight ||
