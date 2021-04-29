@@ -22,7 +22,8 @@ let resizingRowId = -1,
   resizingRowTop = -1,
   resizingColumnId = -1,
   resizingColumnLeft = -1,
-  viewer = null;
+  viewer = null,
+  anyCellEditibg = true;
 
 function init() {
   Events.on("tablechanged", tableChanged);
@@ -49,6 +50,10 @@ function setViewer(v) {
 
 function getViewer() {
   return viewer;
+}
+
+function setAnyCellEditig(v) {
+  anyCellEditibg = v;
 }
 
 function tableChanged(e) {
@@ -286,8 +291,10 @@ function copy() {
 }
 
 function handleCopy(e) {
-  e.preventDefault();
-  e.clipboardData.setData("text/plain", JSON.stringify(getCopyObj()));
+  if (!anyCellEditibg) {
+    e.preventDefault();
+    e.clipboardData.setData("text/plain", JSON.stringify(getCopyObj()));
+  }
 }
 
 function pasteCell(start, row, column, cell) {
@@ -319,8 +326,10 @@ function paste() {
 }
 
 function handlePaste(e) {
-  e.preventDefault();
-  pasteFromObj(JSON.parse(e.clipboardData.getData("text/plain")));
+  if (!anyCellEditibg) {
+    e.preventDefault();
+    pasteFromObj(JSON.parse(e.clipboardData.getData("text/plain")));
+  }
 }
 
 function cut() {
@@ -329,13 +338,16 @@ function cut() {
 }
 
 function handleCut(e) {
-  handleCopy(e);
-  clearSelected();
+  if (!anyCellEditibg) {
+    handleCopy(e);
+    clearSelected();
+  }
 }
 
 export default {
   setViewer,
   getViewer,
+  setAnyCellEditig,
   init,
 
   clearSelected,

@@ -88,12 +88,14 @@ export default {
       this.isEditing = true;
       selectionRange.unshift({ row: this.rowid, column: this.columnid });
       ETable.clearSelection(1, true);
+      ETable.setAnyCellEditig(true);
       setTimeout(() => {
         this.$refs.editor.focus();
         selectElementContents(this.$refs.editor, movetoend);
       }, 10);
     },
     onUnfocus(e) {
+      ETable.setAnyCellEditig(false);
       this.updateContent();
       this.isEditing = false;
     },
