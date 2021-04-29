@@ -86,7 +86,8 @@ export default {
     },
     onFocus(movetoend = false) {
       this.isEditing = true;
-      ETable.clearSelection(0);
+      selectionRange.unshift({ row: this.rowid, column: this.columnid });
+      ETable.clearSelection(1, true);
       setTimeout(() => {
         this.$refs.editor.focus();
         selectElementContents(this.$refs.editor, movetoend);

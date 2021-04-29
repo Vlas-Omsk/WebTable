@@ -196,8 +196,9 @@ function selectionTouchMove(e) {
     });
 }
 
-function clearSelection(index = 0) {
+function clearSelection(index = 0, usererender = false) {
   while (selectionRange.length > index) selectionRange.pop();
+  if (usererender == true) Events.broadcast("selectionchanged", null);
 }
 
 function selectAll() {
