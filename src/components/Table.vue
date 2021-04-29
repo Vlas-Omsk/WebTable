@@ -47,7 +47,7 @@ import RowHeader from "@/components/RowHeader";
 import ColumnHeader from "@/components/ColumnHeader";
 import CellRow from "@/components/CellRow";
 import Events from "@/events";
-import { table, selection, selectionRange } from "@/etable";
+import { table, selection, selectionMap } from "@/etable";
 import ETable from "@/etable";
 import { copyObject, disableScroll, isAnyParentContains } from "@/static";
 
@@ -97,14 +97,11 @@ export default {
         table.columns.push(copyObject(table.default.column));
       if (!table.cells[start.row + row]) table.cells[start.row + row] = [];
       ETable.setCell(start.row + row, start.column + column, cell);
-      selectionRange.push({
-        row: start.row + row,
-        column: start.column + column,
-      });
+      ETable.setMap(start.row + row, start.column + column);
     },
     paste() {
       let clipboardSave = copyObject(this.clipboard);
-      ETable.clearSelection(0);
+      ETable.clearSelection();
       for (let data of this.clipboard.cells) {
         this.pasteCell(selection.start, data.row, data.column, data.cell);
       }

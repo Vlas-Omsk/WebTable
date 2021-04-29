@@ -27,7 +27,7 @@ function clear() {
 function broadcast(event, evObject) {
   //setTimeout(() => {
   events[event].forEach((callback) => callback && callback(evObject));
-  //});
+  //}, 1);
 }
 
 document.addEventListener("mousemove", function(e) {

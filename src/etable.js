@@ -1,7 +1,7 @@
 import Events from "@/events";
 import { copyObject } from "@/static";
 
-export let selectionRange = [],
+export let selectionMap,
   selection = {},
   isSelecting = false,
   table = {
@@ -24,6 +24,8 @@ let resizingRowId = -1,
   resizingColumnLeft = -1;
 
 function init() {
+  clearSelection();
+
   Events.on("tablechanged", tableChanged);
   Events.on("mousemove", resizeMove);
   Events.on("mouseup", resizeEnd);
@@ -110,6 +112,13 @@ function resizeEnd(e) {
 }
 
 //selection
+function setMap(row, column) {
+  if (row == null) selectionMap.columns[column] = true;
+  if (column == null) selectionMap.rows[row] = true;
+  if (!selectionMap.cells[row]) selectionMap.cells[row] = [];
+  return (selectionMap.cells[row][column] = true);
+}
+
 function selectionStart(e) {
   if (resizingRowId != -1 || resizingColumnId != -1) return;
   if (e.ev.shiftKey) {
@@ -119,8 +128,8 @@ function selectionStart(e) {
   }
   isSelecting = true;
   if (!e.ev.ctrlKey && !e.ev.shiftKey) clearSelection();
-  selectionRange.push({ row: e.row, column: e.column });
-  e.index = selectionRange.length;
+  setMap(e.row, e.column);
+  e.savedState = copyObject(selectionMap);
   selection.start = e;
   Events.broadcast("selectionchanged", null);
 }
@@ -132,25 +141,22 @@ function selectionMove(e) {
     let maxY = Math.max(selection.start.row, e.row);
     let minX = Math.min(selection.start.column, e.column);
     let maxX = Math.max(selection.start.column, e.column);
-    clearSelection(selection.start.index);
+    clearSelection(selection.start.savedState);
     if (minY == maxY && minX == 0 && maxX == table.columns.length - 1) {
-      selectionRange.push({ row: minY });
+      setMap(minY, null);
     } else if (minX == maxX && minY == 0 && maxY == table.rows.length - 1) {
-      selectionRange.push({ column: minX });
+      setMap(null, minX);
     } else {
-      selectionRange.push({
-        startRow: minY,
-        endRow: maxY,
-        startColumn: minX,
-        endColumn: maxX,
-      });
+      for (let row = minY; row <= maxY; row++)
+        for (let col = minX; col <= maxX; col++) setMap(row, col);
     }
     Events.broadcast("selectionchanged", null);
   }
 }
 
-function clearSelection(index = 0) {
-  while (selectionRange.length > index) selectionRange.pop();
+function clearSelection(savedState = null) {
+  if (savedState) selectionMap = copyObject(savedState);
+  else selectionMap = { all: false, rows: [], columns: [], cells: [] };
 }
 
 function selectAll() {
@@ -160,39 +166,46 @@ function selectAll() {
     column: 0,
     ev: {},
   });
-  selectionRange.push(null);
+  selectionMap.all = true;
   isSelecting = false;
   Events.broadcast("selectionchanged", null);
 }
 
+function isSelected(row, column) {
+  if (
+    row < 0 ||
+    row >= table.rows.length ||
+    column < 0 ||
+    column >= table.columns.length
+  )
+    return false;
+
+  if (selectionMap.all == true) return true;
+  else {
+    if (selectionMap.rows[row] == true) return true;
+    else if (selectionMap.columns[column] == true) return true;
+    else if (selectionMap.cells[row] && selectionMap.cells[row][column] == true)
+      return true;
+  }
+
+  return false;
+}
+
 function getSelectedCells() {
-  let start = selection.start;
   let result = [];
-  for (let select of selectionRange) {
-    if (select == null) {
-      for (let row = 0; row < table.rows.length; row++)
-        for (let col = 0; col < table.columns.length; col++)
-          result.push({ row, column: col });
-      break;
-    } else if (select.column == undefined && select.row == start.row) {
-      for (let col = 0; col < table.columns.length; col++)
-        result.push({ row: start.row, column: col });
-    } else if (select.row == undefined && select.column == start.column) {
-      for (let row = 0; row < table.rows.length; row++)
-        result.push({ row, column: start.column });
-    } else if (select.row != undefined && select.column != undefined) {
-      result.push({ row: select.row, column: select.column });
-    } else {
-      for (let row = select.startRow; row <= select.endRow; row++)
-        for (let col = select.startColumn; col <= select.endColumn; col++)
-          result.push({ row, column: col });
+  for (let row = 0; row < table.rows.length; row++) {
+    for (let col = 0; col < table.columns.length; col++) {
+      if (isSelected(row, col)) result.push({ row, column: col });
     }
   }
+
   return result;
 }
 
 export default {
   init,
+
+  setMap,
 
   clearSelected,
   getCell,
@@ -207,5 +220,6 @@ export default {
   selectionMove,
   clearSelection,
   selectAll,
+  isSelected,
   getSelectedCells,
 };

@@ -16,7 +16,7 @@
 
 <script>
 import Events from "@/events";
-import { selectionRange, selection, table } from "@/etable";
+import { selectionMap, selection, table } from "@/etable";
 import ETable from "@/etable";
 import { isLetter, selectElementContents, isOnVisibleSpace } from "@/static";
 
@@ -59,7 +59,7 @@ export default {
     },
     onFocus(movetoend = false) {
       this.isEditing = true;
-      ETable.clearSelection(0);
+      ETable.clearSelection();
       setTimeout(() => {
         this.$refs.editor.focus();
         selectElementContents(this.$refs.editor, movetoend);
@@ -106,31 +106,7 @@ export default {
         selection.start.column == this.columnid
       );
     },
-    isSelected(row, column) {
-      if (
-        row < 0 ||
-        row >= table.rows.length ||
-        column < 0 ||
-        column >= table.columns.length
-      )
-        return false;
-
-      for (let select of selectionRange) {
-        if (select == null) return true;
-        else if (select.column == undefined && select.row == row) return true;
-        else if (select.row == undefined && select.column == column)
-          return true;
-        else if (select.row == row && select.column == column) return true;
-        else if (
-          select.startColumn <= column &&
-          select.endColumn >= column &&
-          select.startRow <= row &&
-          select.endRow >= row
-        )
-          return true;
-      }
-      return false;
-    },
+    isSelected: ETable.isSelected,
     onSelectionSelectionChanged() {
       if (!this.$refs.editor) return;
       //if (!isOnVisibleSpace(this.$refs.editor)) return;

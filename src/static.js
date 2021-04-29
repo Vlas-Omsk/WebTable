@@ -175,7 +175,7 @@ export function isAnyParentContains(source, parents) {
 export function isOnVisibleSpace(element) {
   var bodyHeight = window.innerHeight;
   var bodyWidth = window.innerWidth;
-  var elemRect = element.getBoundingClientRect();
+  var elemRect = element.getClientRects()[0];
   if (
     elemRect.bottom < 0 ||
     elemRect.top > bodyHeight ||
