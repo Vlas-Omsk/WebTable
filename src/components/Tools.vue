@@ -1,57 +1,9 @@
 <template>
   <div class="tools" ref="root">
     <div class="tools__container">
-      <DropdownButton
-        title="Table"
-        :items="[
-          {
-            label: 'Create',
-            click() {
-              openpopup();
-            },
-          },
-          {
-            label: 'Open',
-            click() {
-              $emit('open', null);
-            },
-          },
-          {
-            label: 'Save',
-            click() {
-              $emit('save', null);
-            },
-          },
-        ]"
-      />
-      <DropdownButton
-        title="Edit"
-        :items="[
-          {
-            label: 'Select all',
-            click() {
-              call('selectAll');
-            },
-          },
-          {
-            label: 'Clear',
-            click() {
-              call('clearSelected');
-            },
-          },
-        ]"
-      />
-      <DropdownButton
-        title="Window"
-        :items="[
-          {
-            label: 'Show text table preview',
-            click() {
-              $emit('isTextTableViewerShowedChanged', null);
-            },
-          },
-        ]"
-      />
+      <DropdownButton title="Table" :items="tabletab" />
+      <DropdownButton title="Edit" :items="edittab" />
+      <DropdownButton title="Window" :items="windowtab" />
     </div>
   </div>
 </template>
@@ -60,21 +12,58 @@
 import DropdownButton from "@/components/DropdownButton";
 import CreateTable from "@/popups/CreateTable";
 import Events from "@/events";
+import ETable from "@/etable";
+import json from "@/formats/json";
 
 export default {
   components: {
     DropdownButton,
   },
-  methods: {
-    call(name) {
-      Events.broadcast("callfunction", name);
-    },
-    openpopup() {
-      Events.broadcast("openpopup", { component: CreateTable });
-    },
-  },
-  mounted() {
-    this.$emit("load", { target: this.$refs.root });
+  data() {
+    return {
+      tabletab: [
+        {
+          label: "Create",
+          click() {
+            Events.broadcast("openpopup", { component: CreateTable });
+          },
+        },
+        {
+          label: "Open",
+          click() {
+            json.load();
+          },
+        },
+        {
+          label: "Save",
+          click() {
+            json.save();
+          },
+        },
+      ],
+      edittab: [
+        {
+          label: "Select all",
+          click() {
+            ETable.selectAll();
+          },
+        },
+        {
+          label: "Clear",
+          click() {
+            ETable.clearSelected();
+          },
+        },
+      ],
+      windowtab: [
+        {
+          label: "Show text table preview",
+          click() {
+            Events.broadcast("textTableViewerShowedChanged", null);
+          },
+        },
+      ],
+    };
   },
 };
 </script>

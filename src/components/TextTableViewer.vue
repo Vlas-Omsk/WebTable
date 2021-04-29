@@ -16,10 +16,6 @@ import txt from "@/formats/txt";
 
 export default {
   props: {
-    table: {
-      type: Object,
-      required: true,
-    },
     isShowed: {
       type: Boolean,
       required: true,
@@ -33,11 +29,11 @@ export default {
   },
   methods: {
     update() {
-      if (this.isShowed) this.content = txt.generateTextTable(this.table);
+      if (this.isShowed) this.content = txt.generateTextTable();
     },
   },
   created() {
-    Events.on("tablechanged", this.update);
+    Events.on("cellchanged", this.update);
   },
 };
 </script>

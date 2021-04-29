@@ -1,4 +1,7 @@
-function generateTextTable(table) {
+import ETable from "@/etable";
+import { table } from "@/etable";
+
+function generateTextTable() {
   let result = "";
   for (let rowid = 0; rowid < table.rows.length; rowid++) {
     let row = table.rows[rowid];
@@ -7,11 +10,12 @@ function generateTextTable(table) {
       let column = table.columns[columnid];
       let columnwidth = column.width / 6.5;
       let words = [];
-      if (table.cells[rowid][columnid].content) {
+      let ocell = ETable.getCell(rowid, columnid);
+      if (ocell.content) {
         let tempwords = [];
         let ind = 0;
-        for (let i = 0; i < table.cells[rowid][columnid].content.length; i++) {
-          let ch = table.cells[rowid][columnid].content[i];
+        for (let i = 0; i < ocell.content.length; i++) {
+          let ch = ocell.content[i];
           if (!tempwords[ind]) tempwords[ind] = "";
           if (ch == " ") tempwords[ind++] += ch;
           else if (ch == "\n") tempwords[ind++] += ch;

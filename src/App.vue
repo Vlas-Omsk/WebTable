@@ -1,20 +1,9 @@
 <template>
   <div id="app">
-    <Tools
-      @load="fuckingCss"
-      @isTextTableViewerShowedChanged="
-        isTextTableViewerShowed = !isTextTableViewerShowed
-      "
-      @save="save"
-      @open="open"
-    />
-    <div class="container" ref="container">
-      <Table
-        :table="table"
-        :style="tableStyle"
-        :isOverlayVisible="isOverlayVisible"
-      />
-      <TextTableViewer :isShowed="isTextTableViewerShowed" :table="table" />
+    <Tools />
+    <div class="container">
+      <Table :style="tableStyle" />
+      <TextTableViewer :isShowed="isTextTableViewerShowed" />
     </div>
     <Popup v-model="isOverlayVisible" />
   </div>
@@ -22,54 +11,22 @@
 
 <script>
 import Table from "@/components/Table";
-import Tools from "@/components/Tools";
 import TextTableViewer from "@/components/TextTableViewer";
 import Popup from "@/components/Popup";
+import Tools from "@/components/Tools";
+import ETable from "@/etable";
 import Events from "@/events";
-import json from "@/formats/json";
 
 export default {
   name: "App",
   components: {
     Table,
-    Tools,
     TextTableViewer,
     Popup,
+    Tools,
   },
   data() {
     return {
-      table: {
-        default: {
-          row: {
-            height: 20,
-          },
-          column: {
-            width: 100,
-          },
-        },
-        rows: [
-          {
-            height: 20,
-          },
-          {
-            height: 20,
-          },
-          {
-            height: 20,
-          },
-          {
-            height: 20,
-          },
-          {
-            height: 20,
-          },
-          {
-            height: 20,
-          },
-        ],
-        columns: [],
-        cells: [],
-      },
       isOverlayVisible: false,
       isTextTableViewerShowed: false,
     };
@@ -82,33 +39,12 @@ export default {
       };
     },
   },
-  methods: {
-    fuckingCss(e) {
-      this.$refs.container.style.height =
-        "calc(100% - " + e.target.offsetHeight + "px)";
-    },
-    copyObject(obj) {
-      return JSON.parse(JSON.stringify(obj));
-    },
-    save() {
-      json.save(this.table);
-    },
-    open() {
-      json.load();
-    },
-    tableloaded(e) {
-      this.table = e.table;
-      Events.broadcast("aftertableloaded", null);
-    },
-  },
   created() {
-    Events.on("tableloaded", this.tableloaded);
-
-    //temp
-    for (let i = 0; i < 5; i++) {
-      this.table.columns.push(this.copyObject(this.table.default.column));
-      this.table.rows.push(this.copyObject(this.table.default.row));
-    }
+    Events.on(
+      "textTableViewerShowedChanged",
+      () => (this.isTextTableViewerShowed = !this.isTextTableViewerShowed)
+    );
+    ETable.init();
   },
   destroyed() {
     Events.clear();
@@ -140,6 +76,7 @@ body {
 
 .container {
   display: flex;
+  height: calc(100% - 25px);
 }
 
 .button {

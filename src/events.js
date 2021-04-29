@@ -1,18 +1,18 @@
-export let selectionRange = [];
-
 let events = {
   mouseup: [],
   mousemove: [],
   mousedown: [],
   keydown: [],
   selectionchanged: [],
-  callfunction: [],
+  rowsizechanged: [],
+  columnsizechanged: [],
+  cellchanged: [],
   tablechanged: [],
-  tableloaded: [],
-  aftertableloaded: [],
+
+  //
+  textTableViewerShowedChanged: [],
   openpopup: [],
   closepopup: [],
-  cellchanged: [],
 };
 
 function on(event, callback) {
@@ -25,7 +25,9 @@ function clear() {
   for (let e in events) events[e] = [];
 }
 function broadcast(event, evObject) {
+  //setTimeout(() => {
   events[event].forEach((callback) => callback && callback(evObject));
+  //});
 }
 
 document.addEventListener("mousemove", function(e) {

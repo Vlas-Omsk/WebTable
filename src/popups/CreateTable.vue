@@ -84,7 +84,7 @@ export default {
       for (let i = 0; i < this.columns; i++) {
         table.columns.push(this.copyObject(table.default.column));
       }
-      Events.broadcast("tableloaded", { table });
+      Events.broadcast("tablechanged", { table });
       Events.broadcast("closepopup", null);
     },
   },

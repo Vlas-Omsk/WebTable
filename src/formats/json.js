@@ -1,6 +1,8 @@
 import Events from "@/events";
+import ETable from "@/etable";
+import { table } from "@/etable";
 
-function save(table) {
+function save() {
   downloadURI(
     "data:application/json," + encodeURIComponent(JSON.stringify(table)),
     "table.json"
@@ -15,7 +17,7 @@ input.onchange = (e) => {
   reader.readAsText(file, "UTF-8");
   reader.onload = (readerEvent) => {
     let table = JSON.parse(readerEvent.target.result);
-    Events.broadcast("tableloaded", { table });
+    Events.broadcast("tablechanged", { table });
   };
 };
 function load() {
