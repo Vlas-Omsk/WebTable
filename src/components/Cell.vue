@@ -32,12 +32,16 @@ export default {
       type: Object,
       required: true,
     },
+    selectionRange: {
+      type: Array,
+      required: true,
+    },
     selection: {
       type: Object,
       required: true,
     },
     selectionMap: {
-      type: Object,
+      type: Array,
       required: true,
     },
     rowid: {
@@ -179,23 +183,41 @@ export default {
         this.selection.start.column == this.columnid
       );
     },
+    setMap(row, column, value) {
+      if (!this.selectionMap[row]) this.selectionMap[row] = [];
+      return (this.selectionMap[row][column] = value);
+    },
     isSelected(row, column) {
+      if (
+        this.selectionMap[row] != undefined &&
+        this.selectionMap[row][column] != undefined
+      )
+        return this.selectionMap[row][column];
       if (
         row < 0 ||
         row >= this.table.rows.length ||
         column < 0 ||
         column >= this.table.columns.length
       )
-        return false;
-      if (this.selectionMap.all == true) return true;
-      else if (this.selectionMap.rows[row] == true) return true;
-      else if (this.selectionMap.columns[column] == true) return true;
-      else if (
-        this.selectionMap.cells[row] &&
-        this.selectionMap.cells[row][column] == true
-      )
-        return true;
-      return false;
+        return this.setMap(row, column, false);
+
+      for (let select of this.selectionRange) {
+        if (select == null) return this.setMap(row, column, true);
+        else if (select.column == undefined && select.row == row)
+          return this.setMap(row, column, true);
+        else if (select.row == undefined && select.column == column)
+          return this.setMap(row, column, true);
+        else if (select.row == row && select.column == column)
+          return this.setMap(row, column, true);
+        else if (
+          select.startColumn <= column &&
+          select.endColumn >= column &&
+          select.startRow <= row &&
+          select.endRow >= row
+        )
+          return this.setMap(row, column, true);
+      }
+      return this.setMap(row, column, false);
     },
   },
   created() {

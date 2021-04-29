@@ -93,11 +93,11 @@
             v-for="(cell, columnid) of table.columns"
             :key="columnid"
             :style="columnStyle(columnid)"
-            :cell="getCell(rowid, columnid)"
             class="table__cell"
           >
             <Cell
-              :cell="cell"
+              :cell="getCell(rowid, columnid)"
+              :selectionRange="selectionRange"
               :selection="selection"
               :selectionMap="selectionMap"
               :rowid="rowid"
@@ -136,15 +136,10 @@ export default {
       resizingColumnId: -1,
       resizingColumnLeft: -1,
       isSelecting: false,
+      lastSelectionMove: 0,
+      selectionRange: [],
       selection: {},
-      selectionMap: {
-        all: false,
-        rows: [],
-        columns: [],
-        cells: [],
-      },
-      selectionMapBuffer: null,
-      useBuffer: false,
+      selectionMap: [],
       clipboard: {},
     };
   },
@@ -287,69 +282,48 @@ export default {
       }
       this.isSelecting = true;
       if (!e.ev.ctrlKey && !e.ev.shiftKey) this.clearSelection();
-      this.setMap(e.row, e.column, true);
-      e.savedMap = this.copyObject(this.selectionMap);
+      this.selectionMap = [];
+      this.selectionRange.push({ row: e.row, column: e.column });
+      e.index = this.selectionRange.length;
       this.selection.start = e;
     },
     selectionMove(e) {
       if (
-        this.isSelecting ||
-        e.move
-        // &&
-        // (!this.selection.end ||
-        //   (e.row != this.selection.end.row &&
-        //     e.column != this.selection.end.column))
+        (this.isSelecting || e.move) &&
+        +new Date() > this.lastSelectionMove + 200
       ) {
+        this.lastSelectionMove = +new Date();
         this.selection.end = e;
         let minY = Math.min(this.selection.start.row, e.row);
         let maxY = Math.max(this.selection.start.row, e.row);
         let minX = Math.min(this.selection.start.column, e.column);
         let maxX = Math.max(this.selection.start.column, e.column);
-        this.selectionMap = this.copyObject(this.selection.start.savedMap);
-        this.setUseBuffer(true);
+        this.selectionMap = [];
+        this.clearSelection(this.selection.start.index);
         if (
           minY == maxY &&
           minX == 0 &&
           maxX == this.table.columns.length - 1
         ) {
-          this.setMap(minY, null, true);
+          this.selectionRange.push({ row: minY });
         } else if (
           minX == maxX &&
           minY == 0 &&
           maxY == this.table.rows.length - 1
         ) {
-          this.setMap(null, minX, true);
+          this.selectionRange.push({ column: minX });
         } else {
-          for (let y = minY; y <= maxY; y++)
-            for (let x = minX; x <= maxX; x++) {
-              this.setMap(y, x, true);
-            }
+          this.selectionRange.push({
+            startRow: minY,
+            endRow: maxY,
+            startColumn: minX,
+            endColumn: maxX,
+          });
         }
-        this.setUseBuffer(false);
       }
     },
-    setUseBuffer(value) {
-      if (value) this.selectionMapBuffer = this.copyObject(this.selectionMap);
-      else this.selectionMap = this.copyObject(this.selectionMapBuffer);
-      this.useBuffer = value;
-    },
-    setMap(row, column, value) {
-      let map = this.selectionMap;
-      if (this.useBuffer) map = this.selectionMapBuffer;
-      if (row == null) return (map.columns[column] = value);
-      if (column == null) return (map.rows[row] = value);
-      if (!map.cells[row]) map.cells[row] = [];
-      return (map.cells[row][column] = value);
-    },
-    clearSelection() {
-      let map = {
-        all: false,
-        rows: [],
-        columns: [],
-        cells: [],
-      };
-      if (this.useBuffer) this.selectionMapBuffer = map;
-      else this.selectionMap = map;
+    clearSelection(index = 0) {
+      while (this.selectionRange.length > index) this.selectionRange.pop();
     },
     selectAll() {
       this.clearSelection();
@@ -358,13 +332,32 @@ export default {
         column: 0,
         ev: {},
       });
-      this.selectionMap.all = true;
+      this.selectionRange.push(null);
       this.isSelecting = false;
     },
     getSelectedCells() {
       let start = this.selection.start;
       let result = [];
-
+      for (let select of this.selectionRange) {
+        if (select == null) {
+          for (let row = 0; row < this.table.rows.length; row++)
+            for (let col = 0; col < this.table.columns.length; col++)
+              result.push({ row, column: col });
+          break;
+        } else if (select.column == undefined && select.row == start.row) {
+          for (let col = 0; col < this.table.columns.length; col++)
+            result.push({ row: start.row, column: col });
+        } else if (select.row == undefined && select.column == start.column) {
+          for (let row = 0; row < this.table.rows.length; row++)
+            result.push({ row, column: start.column });
+        } else if (select.row != undefined && select.column != undefined) {
+          result.push({ row: select.row, column: select.column });
+        } else {
+          for (let row = select.startRow; row <= select.endRow; row++)
+            for (let col = select.startColumn; col <= select.endColumn; col++)
+              result.push({ row, column: col });
+        }
+      }
       return result;
     },
     copyObject(obj) {
@@ -398,11 +391,15 @@ export default {
       if (!this.table.cells[start.row + row])
         this.table.cells[start.row + row] = [];
       this.table.cells[start.row + row][start.column + column] = cell;
-      this.setMap(start.row + row, start.column + column, true);
+      this.selectionRange.push({
+        row: start.row + row,
+        column: start.column + column,
+      });
     },
     paste() {
       let clipboardSave = this.copyObject(this.clipboard);
-      this.clearSelection();
+      this.selectionMap = [];
+      this.clearSelection(0);
       for (let data of this.clipboard.cells) {
         this.pasteCell(this.selection.start, data.row, data.column, data.cell);
       }
