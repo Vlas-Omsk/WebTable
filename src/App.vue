@@ -3,7 +3,7 @@
     <Tools />
     <div class="container">
       <Table :style="tableStyle" />
-      <TextTableViewer :isShowed="isTextTableViewerShowed" />
+      <TextTableViewer />
     </div>
     <Popup v-model="isOverlayVisible" />
   </div>
@@ -16,6 +16,7 @@ import Popup from "@/components/Popup";
 import Tools from "@/components/Tools";
 import ETable from "@/etable";
 import Events from "@/events";
+import Config from "@/config";
 
 export default {
   name: "App",
@@ -40,11 +41,10 @@ export default {
     },
   },
   created() {
-    Events.on(
-      "textTableViewerShowedChanged",
-      () => (this.isTextTableViewerShowed = !this.isTextTableViewerShowed)
-    );
     ETable.init();
+    Config.onchanged(
+      (cfg) => (this.isTextTableViewerShowed = cfg.isTextTableViewerShowed)
+    );
   },
   destroyed() {
     Events.clear();
@@ -89,6 +89,9 @@ body {
     border: 1px solid transparent !important;
     box-shadow: 0 2px 6px 2px rgba(60, 64, 67, 0.15);
   }
+  display: flex;
+  justify-content: center;
+  align-items: center;
   border-radius: 4px;
   padding: 9px 24px 11px 24px;
   font-weight: 600;
@@ -110,6 +113,48 @@ body {
     box-shadow: 0 1px 3px 1px rgba(52, 168, 83, 0.15);
     background: #188038;
     color: #fff;
+  }
+}
+
+.checkbox {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.popup-body {
+  display: grid;
+  row-gap: 5px;
+  &__column {
+    display: flex;
+    flex-direction: column;
+  }
+  &__row {
+    display: flex;
+    align-items: flex-end;
+    margin: 5px 0;
+    width: 100%;
+  }
+  &__text {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-right: 5px;
+    font-size: 14px;
+  }
+  &__input {
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    box-sizing: border-box;
+    color: #3c4043;
+    padding: 6px 8px;
+    font-size: 14px;
+  }
+  &__container {
+    margin-top: 10px;
+    display: flex;
+    justify-content: flex-end;
+    grid-column: 1 / 999;
   }
 }
 </style>

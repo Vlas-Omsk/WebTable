@@ -9,7 +9,12 @@
     <ul class="dropdown-button__dropdown" ref="dropdown">
       <li
         class="dropdown-button__row"
-        :class="{ disabled: item.__isDisabled }"
+        :class="{
+          disabled: item.__isDisabled,
+          delimiter: item.type == 'delimiter',
+          default:
+            !item.type || item.type == 'default' || item.type == 'checkbox',
+        }"
         v-for="(item, i) of items"
         :key="i"
         @click="
@@ -17,6 +22,28 @@
           isOpened = false;
         "
       >
+        <svg
+          v-if="item.type == 'checkbox' && item.__isChecked"
+          xmlns="http://www.w3.org/2000/svg"
+          xmlns:xlink="http://www.w3.org/1999/xlink"
+          version="1.1"
+          x="0"
+          y="0"
+          width="18px"
+          height="18px"
+          viewBox="0 0 18 18"
+          preserveAspectRatio="none"
+          class="dropdown-button__icon"
+        >
+          <g xmlns="http://www.w3.org/2000/svg">
+            <polygon
+              fill="#000000"
+              fill-rule="evenodd"
+              points="4.75 8.127 1.623 5 .561 6.061 4.75 10.25 13.75 1.25 12.689 .189"
+              transform="translate(2 4)"
+            />
+          </g>
+        </svg>
         {{ item.label }}
       </li>
     </ul>
@@ -52,6 +79,7 @@ export default {
         if (this.z__isOpened) {
           for (let item of this.items) {
             if (item.isDisabled) item.__isDisabled = item.isDisabled();
+            if (item.type == "checkbox") item.__isChecked = item.isChecked();
           }
         }
       },
@@ -98,7 +126,7 @@ export default {
 
   &__dropdown {
     position: absolute;
-    width: 160px;
+    width: 240px;
     bottom: 0;
     left: 0;
     margin: 0;
@@ -118,19 +146,33 @@ export default {
     cursor: default;
   }
   &__row {
+    position: relative;
     &:hover {
       background: #f1f3f4;
     }
     &.disabled {
-      opacity: 0.8;
+      opacity: 0.6;
       pointer-events: none;
       cursor: default;
     }
-    margin: 0;
-    padding: 6px 15px 6px 38px;
-    word-wrap: normal;
-    text-align: left;
-    cursor: pointer;
+    &.default {
+      margin: 0;
+      padding: 8px 15px 8px 38px;
+      word-wrap: normal;
+      text-align: left;
+      cursor: pointer;
+    }
+    &.delimiter {
+      margin: 6px 0px 6px 34px;
+      height: 1px;
+      background-color: rgb(218, 220, 224);
+    }
+  }
+  &__icon {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    margin: -9px 8px 7px 12px;
   }
   &.opened {
     background-color: #d1d3d4;

@@ -11,10 +11,12 @@
 <script>
 import DropdownButton from "@/components/DropdownButton";
 import CreateTable from "@/popups/CreateTable";
+import ChangeSize from "@/popups/ChangeSize";
 import Events from "@/events";
 import ETable from "@/etable";
 import { selection } from "@/etable";
 import json from "@/formats/json";
+import Config from "@/config";
 
 export default {
   components: {
@@ -41,6 +43,60 @@ export default {
             json.save();
           },
         },
+        {
+          label: "Change size",
+          click() {
+            Events.broadcast("openpopup", { component: ChangeSize });
+          },
+        },
+        {
+          type: "delimiter",
+        },
+        {
+          label: "Add row after selected",
+          click() {
+            ETable.addRow(selection.start.row + 1);
+          },
+          isDisabled: this.isDisabled,
+        },
+        {
+          label: "Add row before selected",
+          click() {
+            ETable.addRow(selection.start.row);
+          },
+          isDisabled: this.isDisabled,
+        },
+        {
+          label: "Delete selected row",
+          click() {
+            ETable.deleteRow(selection.start.row);
+          },
+          isDisabled: this.isDisabled,
+        },
+        {
+          type: "delimiter",
+        },
+        {
+          label: "Add column after selected",
+          click() {
+            ETable.addColumn(selection.start.column + 1);
+          },
+          isDisabled: this.isDisabled,
+        },
+        {
+          label: "Add column before selected",
+          click() {
+            ETable.addColumn(selection.start.column);
+          },
+          isDisabled: this.isDisabled,
+        },
+        {
+          label: "Delete selected column",
+          click() {
+            ETable.deleteColumn(selection.start.column);
+          },
+          isDisabled: this.isDisabled,
+        },
       ],
       edittab: [
         {
@@ -48,6 +104,9 @@ export default {
           click() {
             ETable.selectAll();
           },
+        },
+        {
+          type: "delimiter",
         },
         {
           label: "Clear",
@@ -80,9 +139,16 @@ export default {
       ],
       windowtab: [
         {
+          type: "checkbox",
           label: "Show text table preview",
           click() {
-            Events.broadcast("textTableViewerShowedChanged", null);
+            Config.set(
+              "isTextTableViewerShowed",
+              !Config.get("isTextTableViewerShowed")
+            );
+          },
+          isChecked() {
+            return Config.get("isTextTableViewerShowed");
           },
         },
       ],

@@ -6,7 +6,7 @@
     :class="{ visible: value }"
   >
     <div class="overlay__popup">
-      <component :is="component" />
+      <component :is="component" :data="data" @close="setVisibility(false)" />
     </div>
   </div>
 </template>
@@ -24,6 +24,7 @@ export default {
   data() {
     return {
       component: null,
+      data: {},
     };
   },
   methods: {
@@ -34,6 +35,7 @@ export default {
       if (e.target == this.$refs.overlay) this.setVisibility(false);
     },
     openpopup(e) {
+      this.data = e.data;
       this.component = e.component;
       this.setVisibility(true);
     },

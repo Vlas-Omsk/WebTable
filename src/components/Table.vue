@@ -36,6 +36,8 @@
           :key="rowid"
           :rowid="rowid"
           :focused="focused"
+          @cellEditingStart="isCellEditing = true"
+          @cellEditingEnd="isCellEditing = false"
         />
       </div>
     </div>
@@ -47,9 +49,9 @@ import RowHeader from "@/components/RowHeader";
 import ColumnHeader from "@/components/ColumnHeader";
 import CellRow from "@/components/CellRow";
 import Events from "@/events";
-import { table, selection, selectionRange, viewer } from "@/etable";
+import { table } from "@/etable";
 import ETable from "@/etable";
-import { copyObject, disableScroll, isAnyParentContains } from "@/static";
+import { disableScroll, isAnyParentContains } from "@/static";
 
 export default {
   components: {
@@ -59,8 +61,8 @@ export default {
   },
   data() {
     return {
-      clipboard: {},
       focused: true,
+      isCellEditing: false,
       table,
     };
   },
@@ -80,10 +82,34 @@ export default {
     globalMouseUp(e) {
       this.focused = isAnyParentContains(e.target, [this.$refs.table]);
     },
+    handleCopy(e) {
+      if (this.focused && !this.isCellEditing) {
+        e.preventDefault();
+        e.clipboardData.setData(
+          "text/plain",
+          JSON.stringify(ETable.getCopyObj())
+        );
+      }
+    },
+    handlePaste(e) {
+      if (this.focused && !this.isCellEditing) {
+        e.preventDefault();
+        ETable.pasteFromObj(JSON.parse(e.clipboardData.getData("text/plain")));
+      }
+    },
+    handleCut(e) {
+      if (this.focused && !this.isCellEditing) {
+        this.handleCopy(e);
+        ETable.clearSelected();
+      }
+    },
   },
   created() {
     Events.on("keydown", this.keyPress);
     Events.on("mouseup", this.globalMouseUp);
+    Events.on("copy", this.handleCopy);
+    Events.on("paste", this.handlePaste);
+    Events.on("cut", this.handleCut);
   },
   mounted() {
     disableScroll(this.$refs.column_headers_scroll);

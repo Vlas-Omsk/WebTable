@@ -1,41 +1,41 @@
 <template>
-  <div class="createtable">
-    <div class="createtable__text">Columns:</div>
+  <div class="popup-body">
+    <div class="popup-body__text">Columns:</div>
     <input
       type="text"
-      class="createtable__input"
+      class="popup-body__input"
       style="grid-column: 2; margin-right: 10px"
       v-model="columns"
     />
-    <div class="createtable__text" style="grid-row: 2">
+    <div class="popup-body__text" style="grid-row: 2">
       Rows:
     </div>
     <input
       type="text"
-      class="createtable__input"
+      class="popup-body__input"
       style="grid-column: 2; grid-row: 2; margin-right: 10px"
       v-model="rows"
     />
 
-    <div class="createtable__text" style="grid-column: 3">Column width:</div>
+    <div class="popup-body__text" style="grid-column: 3">Column width:</div>
     <input
       type="text"
-      class="createtable__input"
+      class="popup-body__input"
       style="grid-column: 4"
       v-model="columnwidth"
     />
-    <div class="createtable__text" style="grid-column: 3; grid-row: 2">
+    <div class="popup-body__text" style="grid-column: 3; grid-row: 2">
       Row height:
     </div>
     <input
       type="text"
-      class="createtable__input"
+      class="popup-body__input"
       style="grid-column: 4; grid-row: 2"
       v-model="rowheight"
     />
 
-    <div class="createtable__container">
-      <div class="button" style="margin-right: 10px" @click="close">
+    <div class="popup-body__container">
+      <div class="button" style="margin-right: 10px" @click="$emit('close')">
         Cancel
       </div>
       <div class="button green" @click="create">
@@ -47,6 +47,7 @@
 
 <script>
 import Events from "@/events";
+import { copyObject } from "@/static";
 
 export default {
   data() {
@@ -58,12 +59,6 @@ export default {
     };
   },
   methods: {
-    close() {
-      Events.broadcast("closepopup", null);
-    },
-    copyObject(obj) {
-      return JSON.parse(JSON.stringify(obj));
-    },
     create() {
       let table = {
         default: {
@@ -79,52 +74,14 @@ export default {
         cells: [],
       };
       for (let i = 0; i < this.rows; i++) {
-        table.rows.push(this.copyObject(table.default.row));
+        table.rows.push(copyObject(table.default.row));
       }
       for (let i = 0; i < this.columns; i++) {
-        table.columns.push(this.copyObject(table.default.column));
+        table.columns.push(copyObject(table.default.column));
       }
       Events.broadcast("tablechanged", { table });
-      Events.broadcast("closepopup", null);
+      this.$emit("close");
     },
   },
 };
 </script>
-
-<style lang="scss" scoped>
-.createtable {
-  display: grid;
-  row-gap: 5px;
-  &__column {
-    display: flex;
-    flex-direction: column;
-  }
-  &__row {
-    display: flex;
-    align-items: flex-end;
-    margin: 5px 0;
-    width: 100%;
-  }
-  &__text {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    margin-right: 5px;
-    font-size: 14px;
-  }
-  &__input {
-    border: 1px solid #dadce0;
-    border-radius: 4px;
-    box-sizing: border-box;
-    color: #3c4043;
-    padding: 6px 8px;
-    font-size: 14px;
-  }
-  &__container {
-    margin-top: 10px;
-    display: flex;
-    justify-content: flex-end;
-    grid-column: 1 / 5;
-  }
-}
-</style>

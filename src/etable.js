@@ -22,8 +22,7 @@ let resizingRowId = -1,
   resizingRowTop = -1,
   resizingColumnId = -1,
   resizingColumnLeft = -1,
-  viewer = null,
-  anyCellEditibg = true;
+  viewer = null;
 
 function init() {
   Events.on("tablechanged", tableChanged);
@@ -32,16 +31,24 @@ function init() {
   Events.on("mouseup", resizeEnd);
   Events.on("touchend", resizeEnd);
   Events.on("touchmove", selectionTouchMove);
-  Events.on("copy", handleCopy);
-  Events.on("paste", handlePaste);
-  Events.on("cut", handleCut);
 
-  for (let i = 0; i < 50; i++) {
-    table.rows.push(copyObject(table.default.row));
+  let localTable = localStorage.getItem("table");
+  if (localTable) {
+    localTable = JSON.parse(localTable);
+    Events.broadcast("tablechanged", { table: localTable });
+  } else {
+    for (let i = 0; i < 50; i++) {
+      table.rows.push(copyObject(table.default.row));
+    }
+    for (let i = 0; i < 50; i++) {
+      table.columns.push(copyObject(table.default.column));
+    }
   }
-  for (let i = 0; i < 50; i++) {
-    table.columns.push(copyObject(table.default.column));
-  }
+
+  Events.on("tablechanged", moveTableToLocalStorage);
+  Events.on("cellchanged", moveTableToLocalStorage);
+  Events.on("rowsizechanged", moveTableToLocalStorage);
+  Events.on("columnsizechanged", moveTableToLocalStorage);
 }
 
 function setViewer(v) {
@@ -50,10 +57,6 @@ function setViewer(v) {
 
 function getViewer() {
   return viewer;
-}
-
-function setAnyCellEditig(v) {
-  anyCellEditibg = v;
 }
 
 function tableChanged(e) {
@@ -74,6 +77,11 @@ function tableChanged(e) {
     });
 }
 
+function moveTableToLocalStorage() {
+  localStorage.setItem("table", JSON.stringify(table));
+}
+
+// table
 function clearSelected() {
   for (let cell of getSelectedCells())
     setCell(cell.row, cell.column, { content: null });
@@ -92,6 +100,70 @@ function getCell(row, column) {
     };
   }
   return table.cells[row][column];
+}
+
+function addRow(rowid) {
+  table.rows.splice(rowid, 0, copyObject(table.default.row));
+  table.cells.splice(rowid, 0, []);
+  Events.broadcast("cellchanged", {
+    predicate(row, column) {
+      return row >= rowid;
+    },
+  });
+  for (let i = rowid; i < table.rows.length; i++)
+    Events.broadcast("rowsizechanged", {
+      row: i,
+      value: table.rows[i].height,
+    });
+}
+
+function deleteRow(rowid) {
+  table.rows = table.rows.filter((_, i) => i != rowid);
+  table.cells = table.cells.filter((_, i) => i != rowid);
+  Events.broadcast("cellchanged", {
+    predicate(row, column) {
+      return row >= rowid;
+    },
+  });
+  for (let i = rowid; i < table.rows.length; i++)
+    Events.broadcast("rowsizechanged", {
+      row: i,
+      value: table.rows[i].height,
+    });
+}
+
+function addColumn(columnid) {
+  table.columns.splice(columnid, 0, copyObject(table.default.column));
+  for (let row = 0; row < table.rows.length; row++) {
+    table.cells[row].splice(columnid, 0, { content: null });
+  }
+  Events.broadcast("cellchanged", {
+    predicate(row, column) {
+      return column >= columnid;
+    },
+  });
+  for (let i = columnid; i < table.columns.length; i++)
+    Events.broadcast("columnsizechanged", {
+      column: i,
+      value: table.columns[i].width,
+    });
+}
+
+function deleteColumn(columnid) {
+  table.columns = table.columns.filter((_, i) => i != columnid);
+  for (let row = 0; row < table.rows.length; row++) {
+    table.cells[row] = table.cells[row].filter((_, i) => i != columnid);
+  }
+  Events.broadcast("cellchanged", {
+    predicate(row, column) {
+      return column >= columnid;
+    },
+  });
+  for (let i = columnid; i < table.columns.length; i++)
+    Events.broadcast("columnsizechanged", {
+      column: i,
+      value: table.columns[i].width,
+    });
 }
 
 //resize
@@ -290,13 +362,6 @@ function copy() {
   clipboard.value = JSON.stringify(getCopyObj());
 }
 
-function handleCopy(e) {
-  if (!anyCellEditibg) {
-    e.preventDefault();
-    e.clipboardData.setData("text/plain", JSON.stringify(getCopyObj()));
-  }
-}
-
 function pasteCell(start, row, column, cell) {
   while (table.rows.length <= start.row + row)
     table.rows.push(copyObject(table.default.row));
@@ -325,34 +390,23 @@ function paste() {
   });
 }
 
-function handlePaste(e) {
-  if (!anyCellEditibg) {
-    e.preventDefault();
-    pasteFromObj(JSON.parse(e.clipboardData.getData("text/plain")));
-  }
-}
-
 function cut() {
   copy();
   clearSelected();
 }
 
-function handleCut(e) {
-  if (!anyCellEditibg) {
-    handleCopy(e);
-    clearSelected();
-  }
-}
-
 export default {
   setViewer,
   getViewer,
-  setAnyCellEditig,
   init,
 
   clearSelected,
   getCell,
   setCell,
+  addRow,
+  deleteRow,
+  addColumn,
+  deleteColumn,
 
   rowResizeStart,
   columnResizeStart,
@@ -365,6 +419,8 @@ export default {
   selectAll,
   getSelectedCells,
 
+  getCopyObj,
+  pasteFromObj,
   copy,
   paste,
   cut,

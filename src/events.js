@@ -18,7 +18,7 @@ let events = {
   tablechanged: [],
 
   //
-  textTableViewerShowedChanged: [],
+  configchanged: [],
   openpopup: [],
   closepopup: [],
 };
@@ -67,6 +67,9 @@ document.addEventListener("paste", function(e) {
 });
 document.addEventListener("cut", function(e) {
   broadcast("cut", e);
+});
+document.addEventListener("load", function(e) {
+  broadcast("load", e);
 });
 
 export default {

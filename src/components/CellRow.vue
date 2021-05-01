@@ -1,7 +1,13 @@
 <template>
   <div ref="cellrow" class="wrapper">
     <div v-for="(_, columnid) of table.columns" class="cellrow" :key="columnid">
-      <Cell :rowid="rowid" :columnid="columnid" :focused="focused" />
+      <Cell
+        :rowid="rowid"
+        :columnid="columnid"
+        :focused="focused"
+        @cellEditingStart="$emit('cellEditingStart', $event)"
+        @cellEditingEnd="$emit('cellEditingEnd', $event)"
+      />
     </div>
   </div>
 </template>

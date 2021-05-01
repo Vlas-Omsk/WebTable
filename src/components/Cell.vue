@@ -88,15 +88,18 @@ export default {
       this.isEditing = true;
       selectionRange.unshift({ row: this.rowid, column: this.columnid });
       ETable.clearSelection(1, true);
-      ETable.setAnyCellEditig(true);
+      this.$emit("cellEditingStart", {
+        row: this.rowid,
+        column: this.columnid,
+      });
       setTimeout(() => {
         this.$refs.editor.focus();
         selectElementContents(this.$refs.editor, movetoend);
       }, 10);
     },
     onUnfocus(e) {
-      ETable.setAnyCellEditig(false);
       this.updateContent();
+      this.$emit("cellEditingEnd", { row: this.rowid, column: this.columnid });
       this.isEditing = false;
     },
     onKeyPress(e) {
@@ -193,8 +196,11 @@ export default {
       }
     },
     cellchanged(e) {
-      if (e.row == this.rowid && e.column == this.columnid) {
-        this.content = e.value.content;
+      if (
+        (e.row == this.rowid && e.column == this.columnid) ||
+        (e.predicate != undefined && e.predicate(this.rowid, this.columnid))
+      ) {
+        this.content = e.value ? e.value.content : this.getCell().content;
       }
     },
     tablechanged(e) {

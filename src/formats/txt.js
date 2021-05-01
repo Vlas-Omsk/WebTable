@@ -1,12 +1,75 @@
 import ETable from "@/etable";
-import { table } from "@/etable";
+import { table, selectionRange } from "@/etable";
 
-function generateTextTable() {
+const eol = "\n";
+
+function generateTextTable(symbols, useSelect = false) {
   let result = "";
-  for (let rowid = 0; rowid < table.rows.length; rowid++) {
+  function generateLine(width, symbol) {
+    for (let i = 0; i < width; i++) result += symbol;
+  }
+  let selectionRect;
+  if (useSelect == true) {
+    selectionRect = {
+      startRow: selectionRange[0].row,
+      endRow: selectionRange[0].row,
+      startColumn: selectionRange[0].column,
+      endColumn: selectionRange[0].column,
+    };
+    if (selectionRange.length >= 2) {
+      let select = selectionRange[1];
+      if (select == null) {
+        selectionRect = {
+          startRow: 0,
+          endRow: table.rows.length - 1,
+          startColumn: 0,
+          endColumn: table.columns.length - 1,
+        };
+      } else if (select.column == undefined && select.row != undefined) {
+        selectionRect = {
+          startRow: select.row,
+          endRow: select.row,
+          startColumn: 0,
+          endColumn: table.columns.length - 1,
+        };
+      } else if (select.row == undefined && select.column != undefined) {
+        selectionRect = {
+          startRow: 0,
+          endRow: table.rows.length - 1,
+          startColumn: select.column,
+          endColumn: select.column,
+        };
+      } else if (select.row != undefined && select.column != undefined) {
+        selectionRect = {
+          startRow: select.row,
+          endRow: select.row,
+          startColumn: select.column,
+          endColumn: select.column,
+        };
+      } else {
+        selectionRect = select;
+      }
+    }
+  } else {
+    selectionRect = {
+      startRow: 0,
+      endRow: table.rows.length - 1,
+      startColumn: 0,
+      endColumn: table.columns.length - 1,
+    };
+  }
+  for (
+    let rowid = selectionRect.startRow;
+    rowid <= selectionRect.endRow;
+    rowid++
+  ) {
     let row = table.rows[rowid];
     let line = [];
-    for (let columnid = 0; columnid < table.columns.length; columnid++) {
+    for (
+      let columnid = selectionRect.startColumn;
+      columnid <= selectionRect.endColumn;
+      columnid++
+    ) {
       let column = table.columns[columnid];
       let columnwidth = column.width / 6.5;
       let words = [];
@@ -55,39 +118,33 @@ function generateTextTable() {
       let cell = [];
       let index = 0;
 
-      if (columnid == table.columns.length - 1) {
-        if (rowid == 0) {
-          result += "┬";
-          for (let i = 0; i < columnwidth; i++) result += "─";
-          result += "┐\r\n";
-        } else if (rowid == table.rows.length - 1) {
-          result += "┴";
-          for (let i = 0; i < columnwidth; i++) result += "─";
-          result += "┘";
+      if (columnid == selectionRect.endColumn) {
+        if (rowid == selectionRect.startRow) {
+          if (columnid == selectionRect.startColumn) result += symbols[2];
+          else result += symbols[3];
+          generateLine(columnwidth, symbols[0]);
+          result += symbols[4] + eol;
         } else {
-          result += "┼";
-          for (let i = 0; i < columnwidth; i++) result += "─";
-          result += "┤\r\n";
+          if (columnid == selectionRect.startColumn) result += symbols[5];
+          else result += symbols[6];
+          generateLine(columnwidth, symbols[0]);
+          result += symbols[7] + eol;
         }
       } else {
-        if (columnid == 0) {
-          if (rowid == 0) {
-            result += "┌";
-          } else if (rowid == table.rows.length - 1) {
-            result += "└";
+        if (columnid == selectionRect.startColumn) {
+          if (rowid == selectionRect.startRow) {
+            result += symbols[2];
           } else {
-            result += "├";
+            result += symbols[5];
           }
         } else {
-          if (rowid == 0) {
-            result += "┬";
-          } else if (rowid == table.rows.length - 1) {
-            result += "┴";
+          if (rowid == selectionRect.startRow) {
+            result += symbols[3];
           } else {
-            result += "┼";
+            result += symbols[6];
           }
         }
-        for (let i = 0; i < columnwidth; i++) result += "─";
+        generateLine(columnwidth, symbols[0]);
       }
       for (var word of words) {
         if (!cell[index]) cell[index] = "";
@@ -96,10 +153,9 @@ function generateTextTable() {
         if (!cell[index]) cell[index] = "";
         if (word != "\n") cell[index] += word;
       }
-      line[columnid] = { cell, columnwidth };
+      line[columnid - selectionRect.startColumn] = { cell, columnwidth };
     }
 
-    if (rowid == table.rows.length - 1) break;
     //cell draw
     let maxheight = 0;
     for (let col of line)
@@ -112,13 +168,32 @@ function generateTextTable() {
         if (lineind >= topoffset && col.cell[lineind - topoffset])
           cellline = col.cell[lineind - topoffset];
         let leftoffset = Math.ceil((col.columnwidth - cellline.length) / 2);
-        result += "│";
-        for (let i = 0; i < leftoffset; i++) result += " ";
+        result += symbols[1];
+        generateLine(leftoffset, symbols[11]);
         result += cellline;
-        for (let i = 0; i < col.columnwidth - leftoffset - cellline.length; i++)
-          result += " ";
+        generateLine(
+          col.columnwidth - leftoffset - cellline.length,
+          symbols[11]
+        );
       }
-      result += "│\r\n";
+      result += symbols[1] + eol;
+    }
+
+    if (rowid == selectionRect.endRow) {
+      for (let col = 0; col < line.length; col++) {
+        if (col == 0) {
+          result += symbols[8];
+          generateLine(line[col].columnwidth, symbols[12]);
+          if (col == line.length - 1) result += symbols[10];
+        } else if (col == line.length - 1) {
+          result += symbols[9];
+          generateLine(line[col].columnwidth, symbols[12]);
+          result += symbols[10];
+        } else {
+          result += symbols[9];
+          generateLine(line[col].columnwidth, symbols[12]);
+        }
+      }
     }
   }
   return result;
