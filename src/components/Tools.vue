@@ -57,6 +57,7 @@ export default {
           click() {
             ETable.addRow(selection.start.row + 1);
           },
+          hotkey: ["Ctrl", "K"],
           isDisabled: this.isDisabled,
         },
         {
@@ -64,6 +65,7 @@ export default {
           click() {
             ETable.addRow(selection.start.row);
           },
+          hotkey: ["Ctrl", "I"],
           isDisabled: this.isDisabled,
         },
         {
@@ -71,6 +73,7 @@ export default {
           click() {
             ETable.deleteRow(selection.start.row);
           },
+          hotkey: ["Ctrl", "U"],
           isDisabled: this.isDisabled,
         },
         {
@@ -81,6 +84,7 @@ export default {
           click() {
             ETable.addColumn(selection.start.column + 1);
           },
+          hotkey: ["Ctrl", "L"],
           isDisabled: this.isDisabled,
         },
         {
@@ -88,6 +92,7 @@ export default {
           click() {
             ETable.addColumn(selection.start.column);
           },
+          hotkey: ["Ctrl", "J"],
           isDisabled: this.isDisabled,
         },
         {
@@ -95,6 +100,7 @@ export default {
           click() {
             ETable.deleteColumn(selection.start.column);
           },
+          hotkey: ["Ctrl", "O"],
           isDisabled: this.isDisabled,
         },
       ],
@@ -104,6 +110,7 @@ export default {
           click() {
             ETable.selectAll();
           },
+          hotkey: ["Ctrl", "A"],
         },
         {
           type: "delimiter",
@@ -113,6 +120,7 @@ export default {
           click() {
             ETable.clearSelected();
           },
+          hotkey: ["Delete"],
           isDisabled: this.isDisabled,
         },
         {
@@ -120,6 +128,7 @@ export default {
           click() {
             ETable.copy();
           },
+          hotkey: ["Ctrl", "C"],
           isDisabled: this.isDisabled,
         },
         {
@@ -127,6 +136,7 @@ export default {
           click() {
             ETable.paste();
           },
+          hotkey: ["Ctrl", "V"],
           isDisabled: this.isDisabled,
         },
         {
@@ -134,6 +144,7 @@ export default {
           click() {
             ETable.cut();
           },
+          hotkey: ["Ctrl", "X"],
           isDisabled: this.isDisabled,
         },
       ],

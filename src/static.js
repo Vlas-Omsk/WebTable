@@ -76,6 +76,7 @@ export function isLetter(str) {
         ")",
         "|",
         "\\",
+        "/",
         "[",
         "]",
         "{",

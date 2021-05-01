@@ -103,11 +103,23 @@ export default {
       this.isEditing = false;
     },
     onKeyPress(e) {
-      if (e.code === "Enter" && !e.shiftKey) {
+      if ((e.code === "Enter" || e.code === "Tab") && !e.shiftKey) {
         e.preventDefault();
         this.updateContent();
         this.isEditing = false;
-        return;
+
+        if (e.code === "Enter" && selection.start.row + 1 < table.rows.length)
+          selection.start.row += 1;
+        else if (
+          e.code === "Tab" &&
+          selection.start.column + 1 < table.columns.length
+        )
+          selection.start.column += 1;
+        selectionRange.unshift({
+          row: selection.start.row,
+          column: selection.start.column,
+        });
+        ETable.clearSelection(1, true);
       }
     },
     getCell() {

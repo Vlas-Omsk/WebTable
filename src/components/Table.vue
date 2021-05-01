@@ -49,7 +49,7 @@ import RowHeader from "@/components/RowHeader";
 import ColumnHeader from "@/components/ColumnHeader";
 import CellRow from "@/components/CellRow";
 import Events from "@/events";
-import { table } from "@/etable";
+import { table, selection, selectionRange } from "@/etable";
 import ETable from "@/etable";
 import { disableScroll, isAnyParentContains } from "@/static";
 
@@ -72,11 +72,47 @@ export default {
       this.$refs.column_headers_scroll.scrollTo(e.target.scrollLeft, 0);
       this.$refs.row_headers_scroll.scrollTo(0, e.target.scrollTop);
     },
+    select(row, column) {
+      if (
+        row >= 0 &&
+        row < table.rows.length &&
+        column >= 0 &&
+        column < table.columns.length
+      ) {
+        selection.start = { row, column };
+        selectionRange.unshift({
+          row: selection.start.row,
+          column: selection.start.column,
+        });
+        ETable.clearSelection(1, true);
+      }
+    },
     keyPress(e) {
-      if (!this.focused) return;
+      if (!this.focused || this.isCellEditing) return;
       if (e.ctrlKey && e.code == "KeyA") ETable.selectAll();
-      else if (e.code == "Delete") {
-        ETable.clearSelected();
+      else if (e.code == "Delete") ETable.clearSelected();
+      else if (e.code == "ArrowUp") {
+        if (e.ctrlKey) this.select(0, selection.start.column);
+        else this.select(selection.start.row - 1, selection.start.column);
+      } else if (e.code == "ArrowDown") {
+        if (e.ctrlKey)
+          this.select(table.rows.length - 1, selection.start.column);
+        else this.select(selection.start.row + 1, selection.start.column);
+      } else if (e.code == "ArrowLeft") {
+        if (e.ctrlKey) this.select(selection.start.row, 0);
+        else this.select(selection.start.row, selection.start.column - 1);
+      } else if (e.code == "ArrowRight") {
+        if (e.ctrlKey)
+          this.select(selection.start.row, table.columns.length - 1);
+        else this.select(selection.start.row, selection.start.column + 1);
+      } else if (e.ctrlKey) {
+        e.preventDefault();
+        if (e.code == "KeyI") ETable.addRow(selection.start.row);
+        else if (e.code == "KeyK") ETable.addRow(selection.start.row + 1);
+        else if (e.code == "KeyJ") ETable.addColumn(selection.start.column);
+        else if (e.code == "KeyL") ETable.addColumn(selection.start.column + 1);
+        else if (e.code == "KeyU") ETable.deleteRow(selection.start.row);
+        else if (e.code == "KeyO") ETable.deleteColumn(selection.start.column);
       }
     },
     globalMouseUp(e) {

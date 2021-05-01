@@ -22,29 +22,17 @@
           isOpened = false;
         "
       >
-        <svg
+        <img
           v-if="item.type == 'checkbox' && item.__isChecked"
-          xmlns="http://www.w3.org/2000/svg"
-          xmlns:xlink="http://www.w3.org/1999/xlink"
-          version="1.1"
-          x="0"
-          y="0"
-          width="18px"
-          height="18px"
-          viewBox="0 0 18 18"
-          preserveAspectRatio="none"
           class="dropdown-button__icon"
-        >
-          <g xmlns="http://www.w3.org/2000/svg">
-            <polygon
-              fill="#000000"
-              fill-rule="evenodd"
-              points="4.75 8.127 1.623 5 .561 6.061 4.75 10.25 13.75 1.25 12.689 .189"
-              transform="translate(2 4)"
-            />
-          </g>
-        </svg>
-        {{ item.label }}
+          src="@/assets/icons/check.svg"
+        />
+        <div class="dropdown-button__content">
+          <div>{{ item.label }}</div>
+          <div class="dropdown-button__hotkey">
+            {{ item.hotkey ? item.hotkey.join("+") : "" }}
+          </div>
+        </div>
       </li>
     </ul>
   </div>
@@ -126,7 +114,7 @@ export default {
 
   &__dropdown {
     position: absolute;
-    width: 240px;
+    width: 290px;
     bottom: 0;
     left: 0;
     margin: 0;
@@ -173,6 +161,15 @@ export default {
     left: 0;
     top: 50%;
     margin: -9px 8px 7px 12px;
+  }
+  &__content {
+    display: flex;
+  }
+  &__hotkey {
+    margin-left: auto;
+    padding-left: 16px;
+    color: #a2a8ad;
+    font-weight: 600;
   }
   &.opened {
     background-color: #d1d3d4;
