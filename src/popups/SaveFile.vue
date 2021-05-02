@@ -28,6 +28,7 @@
 </template>
 
 <script>
+import Events from "@/events";
 import Select from "@/components/common/Select";
 import { table } from "@/etable";
 import { saveFile } from "@/static";

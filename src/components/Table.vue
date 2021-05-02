@@ -52,7 +52,7 @@ import SaveFile from "@/popups/SaveFile";
 import Events from "@/events";
 import { table, selection, selectionRange } from "@/etable";
 import ETable from "@/etable";
-import { disableScroll, isAnyParentContains } from "@/static";
+import { disableScroll, isAnyParentContains, copyObject } from "@/static";
 
 export default {
   components: {
@@ -73,19 +73,37 @@ export default {
       this.$refs.column_headers_scroll.scrollTo(e.target.scrollLeft, 0);
       this.$refs.row_headers_scroll.scrollTo(0, e.target.scrollTop);
     },
-    select(row, column) {
+    select(row, column, shift) {
+      let start = {
+        row: selection.start.row + row,
+        column: selection.start.column + column,
+      };
       if (
-        row >= 0 &&
-        row < table.rows.length &&
-        column >= 0 &&
-        column < table.columns.length
+        start.row >= 0 &&
+        start.row < table.rows.length &&
+        start.column >= 0 &&
+        start.column < table.columns.length
       ) {
-        selection.start = { row, column };
-        selectionRange.unshift({
-          row: selection.start.row,
-          column: selection.start.column,
-        });
-        ETable.clearSelection(1, true);
+        if (!shift) {
+          selection.start = start;
+          selectionRange.unshift({
+            row: selection.start.row,
+            column: selection.start.column,
+          });
+          ETable.clearSelection(1, true);
+        } else {
+          if (!selection.start.save) {
+            selection.start.save = copyObject(selection.start);
+            selection.start.index = selectionRange.length;
+          }
+          selection.start.row = start.row;
+          selection.start.column = start.column;
+          ETable.selectionMove({
+            move: true,
+            row: selection.start.save.row,
+            column: selection.start.save.column,
+          });
+        }
       }
     },
     keyPress(e) {
@@ -100,19 +118,27 @@ export default {
       if (e.ctrlKey && e.code == "KeyA") ETable.selectAll();
       else if (e.code == "Delete") ETable.clearSelected();
       else if (e.code == "ArrowUp") {
-        if (e.ctrlKey) this.select(0, selection.start.column);
-        else this.select(selection.start.row - 1, selection.start.column);
+        if (e.ctrlKey) this.select(-selection.start.row, 0, e.shiftKey);
+        else this.select(-1, 0, e.shiftKey);
       } else if (e.code == "ArrowDown") {
         if (e.ctrlKey)
-          this.select(table.rows.length - 1, selection.start.column);
-        else this.select(selection.start.row + 1, selection.start.column);
+          this.select(
+            table.rows.length - selection.start.row - 1,
+            0,
+            e.shiftKey
+          );
+        else this.select(+1, 0, e.shiftKey);
       } else if (e.code == "ArrowLeft") {
-        if (e.ctrlKey) this.select(selection.start.row, 0);
-        else this.select(selection.start.row, selection.start.column - 1);
+        if (e.ctrlKey) this.select(0, -selection.start.column, e.shiftKey);
+        else this.select(0, -1, e.shiftKey);
       } else if (e.code == "ArrowRight") {
         if (e.ctrlKey)
-          this.select(selection.start.row, table.columns.length - 1);
-        else this.select(selection.start.row, selection.start.column + 1);
+          this.select(
+            0,
+            table.columns.length - selection.start.column - 1,
+            e.shiftKey
+          );
+        else this.select(0, +1, e.shiftKey);
       } else if (e.ctrlKey) {
         if (e.code == "KeyI") {
           ETable.addRow(selection.start.row);

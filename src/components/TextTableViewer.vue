@@ -6,8 +6,7 @@
     <div class="texttable__container">
       <Select
         class="texttable__select"
-        :items="borderTypes"
-        v-model="selectedBorderType"
+        :items="borderTypesPreview"
         @valuechanged="borderchanged"
         :index="selectedBorderTypeIndex"
       />
@@ -54,7 +53,6 @@ export default {
       fontSize: 10,
       useSelect: false,
       borderTypes,
-      selectedBorderType: borderTypes[0],
       selectedBorderTypeIndex: 0,
     };
   },
@@ -67,7 +65,28 @@ export default {
       this.update();
     },
   },
+  computed: {
+    borderTypesPreview() {
+      let result = [];
+      for (let i of this.borderTypes) result.push(this.getPreview(i));
+      return result;
+    },
+  },
   methods: {
+    getPreview(sm) {
+      return (
+        sm[2] +
+        sm[0] +
+        sm[0] +
+        sm[6] +
+        sm[0] +
+        sm[0] +
+        sm[9] +
+        sm[0] +
+        sm[0] +
+        sm[10]
+      );
+    },
     borderchanged(e) {
       Config.set(
         "selectedBorderTypeIndex",
@@ -79,7 +98,7 @@ export default {
       if (this.isShowed) {
         if (!this.useSelect || selection.start)
           this.content = txt.generateTextTable(
-            this.selectedBorderType,
+            this.borderTypes[this.selectedBorderTypeIndex],
             this.useSelect
           );
         else this.content = "No selection";
@@ -94,12 +113,8 @@ export default {
     Events.on("cellchanged", this.update);
     Config.onchanged((cfg) => {
       this.isShowed = cfg.isTextTableViewerShowed;
-      if (cfg.selectedBorderTypeIndex) {
+      if (cfg.selectedBorderTypeIndex)
         this.selectedBorderTypeIndex = cfg.selectedBorderTypeIndex;
-        this.selectedBorderType = this.borderTypes[
-          this.selectedBorderTypeIndex
-        ];
-      }
       if (cfg.fontSize) this.fontSize = cfg.fontSize;
       if (cfg.useSelect) this.useSelect = cfg.useSelect;
     });
@@ -152,16 +167,12 @@ export default {
     margin-right: auto;
   }
   &__select {
-    width: 170px;
+    width: 150px;
     margin-right: auto;
     font-family: "Courier New", Courier, monospace;
   }
   &__label {
     font-size: 12px;
   }
-  // &__select {
-  //   margin-right: auto;
-  //   font-family: "Courier New", Courier, monospace;
-  // }
 }
 </style>

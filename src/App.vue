@@ -132,6 +132,7 @@ body {
   color: #3c4043;
   padding: 6px 8px;
   font-size: 14px;
+  user-select: text;
 }
 
 .popup {
