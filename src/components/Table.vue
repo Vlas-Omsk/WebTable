@@ -48,6 +48,7 @@
 import RowHeader from "@/components/RowHeader";
 import ColumnHeader from "@/components/ColumnHeader";
 import CellRow from "@/components/CellRow";
+import SaveFile from "@/popups/SaveFile";
 import Events from "@/events";
 import { table, selection, selectionRange } from "@/etable";
 import ETable from "@/etable";
@@ -88,6 +89,13 @@ export default {
       }
     },
     keyPress(e) {
+      // global
+      if (e.ctrlKey && e.code == "KeyS") {
+        Events.broadcast("openpopup", { component: SaveFile });
+        e.preventDefault();
+      }
+
+      // table
       if (!this.focused || this.isCellEditing) return;
       if (e.ctrlKey && e.code == "KeyA") ETable.selectAll();
       else if (e.code == "Delete") ETable.clearSelected();
@@ -106,13 +114,25 @@ export default {
           this.select(selection.start.row, table.columns.length - 1);
         else this.select(selection.start.row, selection.start.column + 1);
       } else if (e.ctrlKey) {
-        e.preventDefault();
-        if (e.code == "KeyI") ETable.addRow(selection.start.row);
-        else if (e.code == "KeyK") ETable.addRow(selection.start.row + 1);
-        else if (e.code == "KeyJ") ETable.addColumn(selection.start.column);
-        else if (e.code == "KeyL") ETable.addColumn(selection.start.column + 1);
-        else if (e.code == "KeyU") ETable.deleteRow(selection.start.row);
-        else if (e.code == "KeyO") ETable.deleteColumn(selection.start.column);
+        if (e.code == "KeyI") {
+          ETable.addRow(selection.start.row);
+          e.preventDefault();
+        } else if (e.code == "KeyK") {
+          ETable.addRow(selection.start.row + 1);
+          e.preventDefault();
+        } else if (e.code == "KeyJ") {
+          ETable.addColumn(selection.start.column);
+          e.preventDefault();
+        } else if (e.code == "KeyL") {
+          ETable.addColumn(selection.start.column + 1);
+          e.preventDefault();
+        } else if (e.code == "KeyU") {
+          ETable.deleteRow(selection.start.row);
+          e.preventDefault();
+        } else if (e.code == "KeyO") {
+          ETable.deleteColumn(selection.start.column);
+          e.preventDefault();
+        }
       }
     },
     globalMouseUp(e) {

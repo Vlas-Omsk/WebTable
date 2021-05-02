@@ -1,31 +1,30 @@
 <template>
-  <div class="popup-body">
-    <div class="popup-body__text">Columns:</div>
-    <input
-      type="text"
-      class="popup-body__input"
-      style="grid-column: 2; margin-right: 10px"
-      v-model="columns"
-    />
-    <div class="popup-body__text" style="grid-row: 2">
-      Rows:
-    </div>
-    <input
-      type="text"
-      class="popup-body__input"
-      style="grid-column: 2; grid-row: 2; margin-right: 10px"
-      v-model="rows"
-    />
-
-    <div class="popup-body__container">
-      <div class="button" style="margin-right: 10px" @click="$emit('close')">
-        Cancel
-      </div>
-      <div class="button green" @click="change">
-        Change
-      </div>
-    </div>
-  </div>
+  <table class="popup changesize">
+    <tr>
+      <td class="popup__text">Columns:</td>
+      <td class="popup__control">
+        <input type="text" class="popup__control input" v-model="columns" />
+      </td>
+    </tr>
+    <tr>
+      <td class="popup__text">Rows:</td>
+      <td>
+        <input type="text" class="popup__control input" v-model="rows" />
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2">
+        <div class="popup__container">
+          <div class="button" @click="$emit('close')">
+            Cancel
+          </div>
+          <div class="button green" @click="change">
+            Change
+          </div>
+        </div>
+      </td>
+    </tr>
+  </table>
 </template>
 
 <script>
@@ -58,3 +57,9 @@ export default {
   },
 };
 </script>
+
+<style lang="scss" scoped>
+.changesize {
+  width: 360px;
+}
+</style>

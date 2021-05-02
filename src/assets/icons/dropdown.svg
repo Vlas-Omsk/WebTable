@@ -10,11 +10,6 @@
   preserveAspectRatio="none"
 >
   <g xmlns="http://www.w3.org/2000/svg">
-    <polygon
-        fill="#000000"
-        fill-rule="evenodd"
-        points="4.75 8.127 1.623 5 .561 6.061 4.75 10.25 13.75 1.25 12.689 .189"
-        transform="translate(2 4)"
-    />
+    <polygon fill="#5f6368" fill-rule="evenodd" points="0 0 4 4 8 0" transform="translate(5 7)"/>
   </g>
 </svg>

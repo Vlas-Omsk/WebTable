@@ -64,6 +64,7 @@ function tableChanged(e) {
   table.rows = e.table.rows;
   table.columns = e.table.columns;
   table.cells = e.table.cells;
+  table.name = e.table.name;
 
   for (let i = 0; i < table.rows.length; i++)
     Events.broadcast("rowsizechanged", {

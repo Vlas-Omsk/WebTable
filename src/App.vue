@@ -10,6 +10,8 @@
 </template>
 
 <script>
+import Select from "@/components/common/Select";
+
 import Table from "@/components/Table";
 import TextTableViewer from "@/components/TextTableViewer";
 import Popup from "@/components/Popup";
@@ -25,6 +27,7 @@ export default {
     TextTableViewer,
     Popup,
     Tools,
+    Select,
   },
   data() {
     return {
@@ -122,39 +125,35 @@ body {
   align-items: center;
 }
 
-.popup-body {
-  display: grid;
-  row-gap: 5px;
-  &__column {
-    display: flex;
-    flex-direction: column;
-  }
-  &__row {
-    display: flex;
-    align-items: flex-end;
-    margin: 5px 0;
+.input[type="text"] {
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  box-sizing: border-box;
+  color: #3c4043;
+  padding: 6px 8px;
+  font-size: 14px;
+}
+
+.popup {
+  max-width: 100vw;
+  width: 600px;
+  border-spacing: 5px 5px;
+
+  &__control {
     width: 100%;
   }
   &__text {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    margin-right: 5px;
-    font-size: 14px;
-  }
-  &__input {
-    border: 1px solid #dadce0;
-    border-radius: 4px;
-    box-sizing: border-box;
-    color: #3c4043;
-    padding: 6px 8px;
+    text-align: end;
+    white-space: nowrap;
     font-size: 14px;
   }
   &__container {
+    *:not(:last-child) {
+      margin-right: 10px;
+    }
     margin-top: 10px;
     display: flex;
     justify-content: flex-end;
-    grid-column: 1 / 999;
   }
 }
 </style>

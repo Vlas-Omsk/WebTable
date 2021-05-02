@@ -4,11 +4,13 @@
       <div class="texttable__content" ref="content">{{ content }}</div>
     </div>
     <div class="texttable__container">
-      <select class="texttable__select" v-model="selectedBorderType">
-        <option v-for="(type, id) of borderTypes" :key="id" :value="type">{{
-          type
-        }}</option>
-      </select>
+      <Select
+        class="texttable__select"
+        :items="borderTypes"
+        v-model="selectedBorderType"
+        @valuechanged="borderchanged"
+        :index="selectedBorderTypeIndex"
+      />
       <input type="range" min="1" max="20" v-model="fontSize" />
     </div>
     <div class="texttable__container">
@@ -24,12 +26,17 @@
 </template>
 
 <script>
+import Select from "@/components/common/Select";
 import Events from "@/events";
+import { selection } from "@/etable";
 import txt from "@/formats/txt";
 import { selectElementContents } from "@/static";
 import Config from "@/config";
 
 export default {
+  components: {
+    Select,
+  },
   data() {
     let borderTypes = [
       "─│┌┬┐├┼┤└┴┘ ─",
@@ -48,13 +55,10 @@ export default {
       useSelect: false,
       borderTypes,
       selectedBorderType: borderTypes[0],
+      selectedBorderTypeIndex: 0,
     };
   },
   watch: {
-    selectedBorderType: function() {
-      Config.set("selectedBorderType", this.selectedBorderType);
-      this.update();
-    },
     fontSize: function() {
       Config.set("fontSize", this.fontSize);
     },
@@ -64,12 +68,22 @@ export default {
     },
   },
   methods: {
+    borderchanged(e) {
+      Config.set(
+        "selectedBorderTypeIndex",
+        (this.selectedBorderTypeIndex = e.index)
+      );
+      this.update();
+    },
     update() {
-      if (this.isShowed)
-        this.content = txt.generateTextTable(
-          this.selectedBorderType,
-          this.useSelect
-        );
+      if (this.isShowed) {
+        if (!this.useSelect || selection.start)
+          this.content = txt.generateTextTable(
+            this.selectedBorderType,
+            this.useSelect
+          );
+        else this.content = "No selection";
+      }
     },
     copy() {
       selectElementContents(this.$refs.content);
@@ -80,8 +94,12 @@ export default {
     Events.on("cellchanged", this.update);
     Config.onchanged((cfg) => {
       this.isShowed = cfg.isTextTableViewerShowed;
-      if (cfg.selectedBorderType)
-        this.selectedBorderType = cfg.selectedBorderType;
+      if (cfg.selectedBorderTypeIndex) {
+        this.selectedBorderTypeIndex = cfg.selectedBorderTypeIndex;
+        this.selectedBorderType = this.borderTypes[
+          this.selectedBorderTypeIndex
+        ];
+      }
       if (cfg.fontSize) this.fontSize = cfg.fontSize;
       if (cfg.useSelect) this.useSelect = cfg.useSelect;
     });
@@ -100,20 +118,21 @@ export default {
   border-left: $border;
   box-sizing: border-box;
   overflow: hidden;
+  background-color: white;
+  z-index: 1;
 
   &__wrapper {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
     overflow: auto;
     height: 100%;
     width: 100%;
+  }
+  &__content {
     background: white;
     font-family: "Courier New", Courier, monospace;
     white-space: pre;
-  }
-  &__content {
     user-select: text;
+    margin: auto;
   }
   &__container {
     display: flex;
@@ -122,7 +141,7 @@ export default {
     flex-wrap: wrap;
     padding-right: 10px;
     padding-left: 10px;
-    margin-bottom: 10px;
+    margin: 7px 0;
     width: 100%;
     box-sizing: border-box;
   }
@@ -132,13 +151,17 @@ export default {
   &__checkbox {
     margin-right: auto;
   }
+  &__select {
+    width: 170px;
+    margin-right: auto;
+    font-family: "Courier New", Courier, monospace;
+  }
   &__label {
     font-size: 12px;
   }
-  &__select {
-    margin-right: auto;
-    font-family: "Courier New", Courier, monospace;
-    outline: none;
-  }
+  // &__select {
+  //   margin-right: auto;
+  //   font-family: "Courier New", Courier, monospace;
+  // }
 }
 </style>

@@ -1,48 +1,38 @@
 <template>
-  <div class="popup-body">
-    <div class="popup-body__text">Columns:</div>
-    <input
-      type="text"
-      class="popup-body__input"
-      style="grid-column: 2; margin-right: 10px"
-      v-model="columns"
-    />
-    <div class="popup-body__text" style="grid-row: 2">
-      Rows:
-    </div>
-    <input
-      type="text"
-      class="popup-body__input"
-      style="grid-column: 2; grid-row: 2; margin-right: 10px"
-      v-model="rows"
-    />
-
-    <div class="popup-body__text" style="grid-column: 3">Column width:</div>
-    <input
-      type="text"
-      class="popup-body__input"
-      style="grid-column: 4"
-      v-model="columnwidth"
-    />
-    <div class="popup-body__text" style="grid-column: 3; grid-row: 2">
-      Row height:
-    </div>
-    <input
-      type="text"
-      class="popup-body__input"
-      style="grid-column: 4; grid-row: 2"
-      v-model="rowheight"
-    />
-
-    <div class="popup-body__container">
-      <div class="button" style="margin-right: 10px" @click="$emit('close')">
-        Cancel
-      </div>
-      <div class="button green" @click="create">
-        Create
-      </div>
-    </div>
-  </div>
+  <table>
+    <tr>
+      <td class="popup__text">Columns:</td>
+      <td style="padding-right: 10px;">
+        <input type="text" class="popup__control input" v-model="columns" />
+      </td>
+      <td class="popup__text">Rows:</td>
+      <td>
+        <input type="text" class="popup__control input" v-model="rows" />
+      </td>
+    </tr>
+    <tr>
+      <td class="popup__text">Column width:</td>
+      <td style="padding-right: 10px;">
+        <input type="text" class="popup__control input" v-model="columnwidth" />
+      </td>
+      <td class="popup__text">Row height:</td>
+      <td>
+        <input type="text" class="popup__control input" v-model="rowheight" />
+      </td>
+    </tr>
+    <tr>
+      <td colspan="4">
+        <div class="popup__container">
+          <div class="button" @click="$emit('close')">
+            Cancel
+          </div>
+          <div class="button green" @click="create">
+            Create
+          </div>
+        </div>
+      </td>
+    </tr>
+  </table>
 </template>
 
 <script>

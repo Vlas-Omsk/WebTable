@@ -140,3 +140,36 @@ export function isOnVisibleSpace(element) {
     return false;
   return true;
 }
+
+let loadFileAsync_callback = null;
+let input = document.createElement("input");
+input.type = "file";
+input.onchange = (e) => {
+  let file = e.target.files[0];
+  let reader = new FileReader();
+  reader.readAsText(file, "UTF-8");
+  reader.onload = (readerEvent) => {
+    loadFileAsync_callback({
+      content: readerEvent.target.result,
+      file,
+    });
+  };
+};
+
+export function loadFileAsync(callback) {
+  loadFileAsync_callback = callback;
+  input.click();
+}
+
+function downloadURI(uri, name) {
+  var link = document.createElement("a");
+  link.download = name;
+  link.href = uri;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+export function saveFile(mimetype, filename, content) {
+  downloadURI("data:" + mimetype + "," + encodeURIComponent(content), filename);
+}

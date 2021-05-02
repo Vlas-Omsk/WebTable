@@ -12,11 +12,15 @@
 import DropdownButton from "@/components/DropdownButton";
 import CreateTable from "@/popups/CreateTable";
 import ChangeSize from "@/popups/ChangeSize";
+import SaveFile from "@/popups/SaveFile";
 import Events from "@/events";
 import ETable from "@/etable";
 import { selection } from "@/etable";
-import json from "@/formats/json";
+import { loadFileAsync } from "@/static";
 import Config from "@/config";
+
+// formats
+import json from "@/formats/json";
 
 export default {
   components: {
@@ -34,14 +38,18 @@ export default {
         {
           label: "Open",
           click() {
-            json.load();
+            loadFileAsync((e) => {
+              if (e.file.type == "application/json") json.load(e.content);
+              else console.log("Invalid file type");
+            });
           },
         },
         {
           label: "Save",
           click() {
-            json.save();
+            Events.broadcast("openpopup", { component: SaveFile });
           },
+          hotkey: ["Ctrl", "S"],
         },
         {
           label: "Change size",

@@ -9,7 +9,7 @@ function generateTextTable(symbols, useSelect = false) {
     for (let i = 0; i < width; i++) result += symbol;
   }
   let selectionRect;
-  if (useSelect == true) {
+  if (useSelect == true && selectionRange.length > 0) {
     selectionRect = {
       startRow: selectionRange[0].row,
       endRow: selectionRange[0].row,
