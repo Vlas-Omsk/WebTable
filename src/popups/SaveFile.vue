@@ -12,6 +12,12 @@
         <input type="text" class="popup__control input" v-model="filename" />
       </td>
     </tr>
+    <tr v-if="index == 2">
+      <td class="popup__text">Delimiter:</td>
+      <td>
+        <input type="text" class="popup__control input" v-model="delimiter" />
+      </td>
+    </tr>
     <tr>
       <td colspan="2">
         <div class="popup__container">
@@ -32,10 +38,12 @@ import Events from "@/events";
 import Select from "@/components/common/Select";
 import { table } from "@/etable";
 import { saveFile } from "@/static";
+import Config from "@/config";
 
 // formats
 import json from "@/formats/json";
 import txt from "@/formats/txt";
+import csv from "@/formats/csv";
 
 export default {
   components: {
@@ -44,7 +52,7 @@ export default {
   data() {
     return {
       filename: "table",
-      formatnames: ["JSON", "TXT - text representation of table"],
+      formatnames: ["JSON", "TXT - text representation of table", "CSV"],
       formats: [
         {
           mimetype: "application/json",
@@ -52,16 +60,23 @@ export default {
           getContent: json.getString,
         },
         {
-          mimetype: "plain/text",
+          mimetype: "text/plain",
           ext: "txt",
           getContent: () => txt.generateTextTable("─│┌┬┐├┼┤└┴┘ ─", false),
         },
+        {
+          mimetype: "text/csv",
+          ext: "csv",
+          getContent: () => csv.getString(this.delimiter),
+        },
       ],
+      delimiter: ";",
       index: 0,
     };
   },
   methods: {
     download() {
+      Config.set("delimiter", this.delimiter);
       table.name = this.filename;
       let format = this.formats[this.index];
       saveFile(
@@ -74,6 +89,9 @@ export default {
   created() {
     if (table.name) this.filename = table.name;
     Events.on("tablechanged", (e) => (this.filename = e.table.name));
+    Config.onchanged((cfg) => {
+      if (cfg.delimiter) this.delimiter = cfg.delimiter;
+    });
   },
 };
 </script>

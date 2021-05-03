@@ -141,23 +141,31 @@ export function isOnVisibleSpace(element) {
   return true;
 }
 
-let loadFileAsync_callback = null;
-let input = document.createElement("input");
-input.type = "file";
-input.onchange = (e) => {
-  let file = e.target.files[0];
-  let reader = new FileReader();
-  reader.readAsText(file, "UTF-8");
-  reader.onload = (readerEvent) => {
-    loadFileAsync_callback({
-      content: readerEvent.target.result,
+export function loadFileAsync(callback) {
+  let input = document.createElement("input");
+  input.type = "file";
+  input.onchange = (e) => {
+    let file = e.target.files[0];
+    let name, ext;
+    let idx = file.name.lastIndexOf(".");
+    if (idx == -1) {
+      name = file.name;
+      ext = "";
+    } else {
+      ext = file.name.slice(file.name.lastIndexOf(".") + 1);
+      name = file.name.slice(0, file.name.lastIndexOf("."));
+    }
+    callback({
+      getContentAsync(cb) {
+        let reader = new FileReader();
+        reader.readAsText(file, "UTF-8");
+        reader.onload = (e) => cb(e.target.result);
+      },
+      name,
+      ext,
       file,
     });
   };
-};
-
-export function loadFileAsync(callback) {
-  loadFileAsync_callback = callback;
   input.click();
 }
 
@@ -172,4 +180,8 @@ function downloadURI(uri, name) {
 
 export function saveFile(mimetype, filename, content) {
   downloadURI("data:" + mimetype + "," + encodeURIComponent(content), filename);
+}
+
+export function getFileEOL(content) {
+  throw "";
 }

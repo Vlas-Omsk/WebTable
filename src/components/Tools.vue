@@ -13,6 +13,7 @@ import DropdownButton from "@/components/DropdownButton";
 import CreateTable from "@/popups/CreateTable";
 import ChangeSize from "@/popups/ChangeSize";
 import SaveFile from "@/popups/SaveFile";
+import Options from "@/popups/Options";
 import Events from "@/events";
 import ETable from "@/etable";
 import { selection } from "@/etable";
@@ -21,6 +22,40 @@ import Config from "@/config";
 
 // formats
 import json from "@/formats/json";
+import csv from "@/formats/csv";
+
+function loadCsv(e) {
+  Events.broadcast("openpopup", {
+    component: Options,
+    data: {
+      width: 360,
+      options: [
+        {
+          label: "Delimiter:",
+          input: Config.get("delimiter") ? Config.get("delimiter") : ";",
+        },
+        { label: "Column width:", input: "100" },
+        { label: "Row height:", input: "20" },
+      ],
+      apply: {
+        label: "Load",
+        click() {
+          Config.set("delimiter", this.options[0].input);
+          e.getContentAsync((content) => {
+            csv.load(this.options[0].input, content, e.name, {
+              row: {
+                height: this.options[2].input,
+              },
+              column: {
+                width: this.options[1].input,
+              },
+            });
+          });
+        },
+      },
+    },
+  });
+}
 
 export default {
   components: {
@@ -39,8 +74,17 @@ export default {
           label: "Open",
           click() {
             loadFileAsync((e) => {
-              if (e.file.type == "application/json") json.load(e.content);
-              else console.log("Invalid file type");
+              switch (e.ext) {
+                case "json":
+                  e.getContentAsync(json.load);
+                  break;
+                case "csv":
+                  loadCsv(e);
+                  break;
+                default:
+                  console.log("Invalid file type");
+                  break;
+              }
             });
           },
         },

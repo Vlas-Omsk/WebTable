@@ -2,6 +2,13 @@ import ETable from "@/etable";
 import { table, selectionRange } from "@/etable";
 
 const eol = "\n";
+const invisible_symbols = ["\r", "\n"];
+
+function getLength(text) {
+  let length = 0;
+  for (let ch of text) if (invisible_symbols.indexOf(ch) == -1) length++;
+  return length;
+}
 
 function generateTextTable(symbols, useSelect = false) {
   let result = "";
@@ -167,12 +174,12 @@ function generateTextTable(symbols, useSelect = false) {
         let cellline = "";
         if (lineind >= topoffset && col.cell[lineind - topoffset])
           cellline = col.cell[lineind - topoffset];
-        let leftoffset = Math.ceil((col.columnwidth - cellline.length) / 2);
+        let leftoffset = Math.ceil((col.columnwidth - getLength(cellline)) / 2);
         result += symbols[1];
         generateLine(leftoffset, symbols[11]);
         result += cellline;
         generateLine(
-          col.columnwidth - leftoffset - cellline.length,
+          col.columnwidth - leftoffset - getLength(cellline),
           symbols[11]
         );
       }
