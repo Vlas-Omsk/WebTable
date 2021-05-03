@@ -91,8 +91,8 @@ export default {
     },
   },
   created() {
-    tablechanged({ table });
-    Events.on("tablechanged", tablechanged);
+    this.tablechanged({ table });
+    Events.on("tablechanged", this.tablechanged);
     Config.onchanged((cfg) => {
       if (cfg.delimiter) this.delimiter = cfg.delimiter;
     });
