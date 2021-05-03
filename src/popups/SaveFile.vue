@@ -85,10 +85,14 @@ export default {
         format.getContent()
       );
     },
+    tablechanged(e) {
+      if (e.table.name) this.filename = e.table.name;
+      else this.filename = "table";
+    },
   },
   created() {
-    if (table.name) this.filename = table.name;
-    Events.on("tablechanged", (e) => (this.filename = e.table.name));
+    tablechanged({ table });
+    Events.on("tablechanged", tablechanged);
     Config.onchanged((cfg) => {
       if (cfg.delimiter) this.delimiter = cfg.delimiter;
     });
